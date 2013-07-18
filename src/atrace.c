@@ -37,7 +37,7 @@ long getSysCallNo(int pid)
 		 */
 		scno &= FIX_SYS;
 	}
-	return scno;																			
+	return scno;
 }
 
 int main(int argc, char *argv[])
