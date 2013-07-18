@@ -8,8 +8,8 @@ We've run ptrace on android emulator.
 
 First, set Android NDK cross-compiler environment.
 
-  $cd src
-  $make
+	$cd src
+	$make
 
 Then use adb to push atrace into android emulator.
 
