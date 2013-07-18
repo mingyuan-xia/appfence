@@ -13,5 +13,13 @@ First, set Android NDK cross-compiler environment.
 
 Then use adb to push atrace into android emulator.
 Use adb shell to run atrace like:
-
-	$./atrace <pid>
+         
+        $ cd .../tools
+        $ ./emulator -avd your_avd_name      :start an android emulator
+        
+        $ cd .../platform-tools
+        $ ./adb push atrace /data/atrace     :push atrace to emulator
+        $ ./adb shell 
+        $ ps                                 :to check pid for each running process
+        $ cd data                           
+        $ ./atrace <pid>                     :start atrace to monitor SYSCALLS
