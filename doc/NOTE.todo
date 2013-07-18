@@ -1,0 +1,8 @@
+# TODO
+ - write arguments to the readonly memory
+ - handle deleted path / pruned path for profile apps
+ - persistent meta data for files
+ - intercepting/preventing socket() like SYSCALLS
+ 
+# DONE
+ - cross ptrace to android running time
