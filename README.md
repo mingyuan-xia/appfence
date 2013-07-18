@@ -12,6 +12,6 @@ First, set Android NDK cross-compiler environment.
 	$make
 
 Then use adb to push atrace into android emulator.
-
 Use adb shell to run atrace like:
-./atrace <pid>
+
+	$./atrace <pid>
