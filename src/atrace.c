@@ -32,7 +32,6 @@ long getSysCallNo(int pid)
 		if ((scno & FIX_OABI) != OABI) {
 			return -1;
 		}
-          													
 		/* 
 		 * Fixup the syscall number 
 		 */
@@ -47,7 +46,7 @@ int main(int argc, char *argv[])
 		printf("Usage: %s <pid to be traced>\n", argv[1]);
 		return 1;
 	}
-																					   
+	
 	pid_t traced_process;
 	int status;
 	long sys;
@@ -68,8 +67,8 @@ int main(int argc, char *argv[])
 		printf("syscall: %ld\n", sys);
 		ptrace(PTRACE_SYSCALL, traced_process, NULL, NULL);
 	}
-																								   
+	
 	ptrace(PTRACE_DETACH, traced_process, NULL, NULL);
-																								   
+	
 	return 0;
 }
