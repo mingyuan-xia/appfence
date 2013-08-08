@@ -50,8 +50,8 @@ void putdata(pid_t child, long addr, char *str)
 	char *laddr;
 	int i, j;
 	union u {
-			long val;
-			char chars[long_size];
+		long val;
+		char chars[long_size];
 	}data;
 	int len = strlen(str);
 	i = 0;
