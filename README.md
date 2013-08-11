@@ -1,6 +1,10 @@
 appfence
 ========
-Appfence is an android *sandboxing* mechanism aims to prevent apps' misbehaviours from invoking SYSCALL and thus enables users to operate apps properly.
+Appfence is an android *sandboxing* mechanism providing a list of important features:
+* intercept sensitive behaviors of apps and report them to user for further operation
+* achieve file-level data isolation
+
+Note: Appfence operates on system call level.
 
 getting started
 ===============
