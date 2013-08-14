@@ -1,3 +1,18 @@
+/*
+* This program is modified for android to attach ptrace to process——zygote,
+* and even to intercept fork() in zygote,so that we can perform fork() in
+* our own appfence process.
+*
+* Here is just an example for linux ptrace of using ptrace_attach to set up 
+* checkpoints and supplant some instructions.
+*
+* The later version with full functions mentioned above will be work out.
+*/
+
+/*
+* attach
+*/
+
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
