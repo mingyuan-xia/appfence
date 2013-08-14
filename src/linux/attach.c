@@ -25,10 +25,9 @@ int main(int argc, char *argv[])
     pid_t traced_process;
     struct user_regs_struct regs;
     long ins;
-    if(argc != 2) 
-    {
-        printf("Usage: %s <pid to be traced>\n", argv[0], argv[1]);
-        exit(1);
+    if(argc != 2) {
+                   printf("Usage: %s <pid to be traced>\n", argv[0], argv[1]);
+                   exit(1);
     }
     traced_process = atoi(argv[1]);
     ptrace(PTRACE_ATTACH, traced_process, NULL, NULL);
