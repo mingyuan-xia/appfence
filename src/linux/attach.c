@@ -1,7 +1,8 @@
 /*
-* This program is modified for android to attach ptrace to process——zygote,
-* and even to intercept fork() in zygote,so that we can perform fork() in
-* our own appfence process.
+* This program is modified for android to call fork() in our appfence process 
+* to create a pprocess,which enables ptrace to do the later work including 
+* attaching to zygote,intercepting fork() in zygote,and even returning the
+* process we forked in appfence to release zygote.
 *
 * Here is just a version for linux ptrace of using ptrace_attach to set up 
 * checkpoints and supplant some instructions.
@@ -66,6 +67,34 @@ void getdata(pid_t child, long addr, char *str, int len)
     }
     str[len] = '\0';
 }
+
+/*
+void tracePro(int pid)
+{
+    int len = 4;
+    char insertcode[] = " ";
+        
+    putdata(pid,  , insertcode, len);
+}
+    
+int main(int argc, char *argv[])
+{   
+    if(argc != 2) {
+                   printf("Usage: %s <pid to be traced>\n", argv[0], argv[1]);
+                   return 1;
+    }
+    pid_t traced_process;
+    int status;
+    traced_process = atoi(argv[1]);
+    if(0 != ptrace(PTRACE_ATTACH, traced_process, NULL, NULL))
+    {
+        printf("Trace process failed:%d.\n", errno);
+        return 1;
+    }
+    tracePro(traced_process);
+    ptrace(PTRACE_DETACH, traced_process, NULL, NULL);
+    return 0;
+}*/
 
 void putdata(pid_t child, long addr, char *str, int len)
 {   
