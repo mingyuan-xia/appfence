@@ -78,7 +78,7 @@ int main(int argc, char * argv[])
         printf("EIP: %lx , orig_eax %lx, eax %lx\n", regs.eip, regs.orig_eax, regs.eax);
 
         printf("PTRACE_SYSCALL\n");
-        ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+        ptrace(PTRACE_SYSCALL, pid_t, NULL, NULL);
 
         printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
     }
