@@ -1,8 +1,8 @@
-# TODO
- - write arguments to the readonly memory
- - handle deleted path / pruned path for profile apps
- - persistent meta data for files
- - intercepting/preventing socket() like SYSCALLS
- 
-# DONE
- - cross ptrace to android running time
+# TODO LIST FOR COMPONENT I
+ - appfence ptraces zygote 
+ - appfence gets zygote's fork() 
+ - appfence forks, say process A. 
+ - appfence ptraces process A 
+ - appfence returns A's pid to zygote, as if it is forked by zygote 
+ - appfence unattaches zyogte 
+ - zygote exec process A, image changed but still being ptraced by appfence
