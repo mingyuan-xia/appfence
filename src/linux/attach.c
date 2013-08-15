@@ -59,10 +59,10 @@ void getdata(pid_t child, long addr, char *str, int len)
     laddr = str;
     
     while(i < j) {
-                  data.val = ptrace(PTRACE_PEEKDATA, child, addr + i * 4, NULL);
-                  memcpy(laddr, data.chars, long_size);
-                  ++i;
-                  laddr += long_size;
+        data.val = ptrace(PTRACE_PEEKDATA, child, addr + i * 4, NULL);
+        memcpy(laddr, data.chars, long_size);
+        ++i;
+        laddr += long_size;
     }
     
     j = len % long_size;
