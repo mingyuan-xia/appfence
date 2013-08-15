@@ -19,6 +19,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <linux/user.h>
+#include <sys/syscall.h>   /* For SYS_FORK etc */
 
 /*
 int main(int argc, char *argv[])
@@ -39,9 +40,53 @@ int main(int argc, char *argv[])
     printf("EIP: %lx Instruction executed: %lx\n", regs.eip, ins);
     ptrace(PTRACE_DETACH, traced_process, NULL, NULL);
     return 0;
-}
-*/
+}*/
 
+// First try other SYS_CALLs
+#define ORIG_EAX 11
+#define EBX 0
+#define ECX 1
+#define EDX 2
+#define EAX 6
+
+int main(int argc, char * argv[])
+{   
+    int pid_t = 33;
+    long orig_eax, eax;
+    long params[3];
+    int status;
+    int insyscall = 0;
+
+    if(argc < 2){
+        printf("need pid\n");
+        return 0;
+    }
+
+    printf("try to attch pid [%d]\n", child);
+    ptrace(PTRACE_ATTACH, pid_t, 0, 0);
+
+    int count = 20;
+    while(count-- > 0) {
+        wait(&status);
+        printf("recv sig [%d]\n", WSTOPSIG(status));
+        if(WIFEXITED(status)){
+            printf("The target has dead\n");
+            break;
+        }
+        struct user_regs_struct regs;
+        ptrace(PTRACE_GETREGS, pid_t, NULL, &regs);
+        printf("EIP: %lx , orig_eax %lx, eax %lx\n", regs.eip, regs.orig_eax, regs.eax);
+
+        printf("PTRACE_SYSCALL\n");
+        ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
+    }
+
+    return 0;
+}
+
+/*
 const int long_size = sizeof(long);
 
 void getdata(pid_t child, long addr, char *str, int len)
@@ -71,7 +116,7 @@ void getdata(pid_t child, long addr, char *str, int len)
         memcpy(laddr, data.chars, j);
     }
     str[len] = '\0';
-}
+}*/
 
 /*
 void tracePro(int pid)
@@ -152,6 +197,7 @@ void __cyg_profile_func_exit  (void *this_fn, void *call_site)
     stack_at--;
 }*/
 
+/*
 void putdata(pid_t child, long addr, char *str, int len)
 {   
     char *laddr;
@@ -186,7 +232,7 @@ int main(int argc, char *argv[])
     pid_t traced_process;
     struct user_regs_struct regs, newregs;
     long ins;
-    /* int 0x80, int3 */
+    // int 0x80, int3 
     char code[] = {0xcd,0x80,0xcc,0};
     char backup[4];
     if(argc != 2) {
@@ -199,13 +245,13 @@ int main(int argc, char *argv[])
     wait(NULL);
     ptrace(PTRACE_GETREGS, traced_process,NULL, &regs);
     
-    /* Copy instructions into a backup variable */
+    // Copy instructions into a backup variable 
     getdata(traced_process, regs.eip, backup, 3);
     
-    /* Put the breakpoint */
+    // Put the breakpoint 
     putdata(traced_process, regs.eip, code, 3);
     
-    /* Let the process continue and execute the int 3 instruction */
+    // Let the process continue and execute the int 3 instruction 
     ptrace(PTRACE_CONT, traced_process, NULL, NULL);
     wait(NULL);
     
@@ -214,8 +260,8 @@ int main(int argc, char *argv[])
     getchar();
     
     putdata(traced_process, regs.eip, backup, 3);
-    /* Setting the eip back to the original instruction to let the process continue */
+    // Setting the eip back to the original instruction to let the process continue 
     ptrace(PTRACE_SETREGS, traced_process, NULL, &regs);
     ptrace(PTRACE_DETACH, traced_process, NULL, NULL);
     return 0;
-}
+}*/
