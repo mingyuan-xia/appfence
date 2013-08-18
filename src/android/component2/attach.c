@@ -15,20 +15,66 @@
 */
 
 #include <stdio.h>
-
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/user.h>
 #include <sys/syscall.h>   /* For SYS_fork etc */
+#include <string.h>
+#include <linux/ptrace.h>
+#include <asm-i486/ptrace.h> /* For constants ORIG_EAX etc */
 
-#define ORIG_EAX 11
-#define EBX 0
-#define ECX 1
-#define EDX 2
-#define EAX 6
+int main(int argc , char *argv[])
+{
+    pid_t child;
 
+    if(argc != 2){
+        fprintf(stderr , "usage: %s program" , argv[0]);
+        return 1;
+    }
+
+    child = fork();
+    if(child == 0) {
+        sleep(1);
+        execl(argv[1] , argv[1] , NULL);
+    }
+    else {
+        int status;
+        long data = PTRACE_O_TRACEEXIT |PTRACE_O_TRACEFORK ;
+
+        ptrace(PTRACE_ATTACH , child , NULL , NULL);
+        ptrace(PTRACE_SETOPTIONS , child , NULL , data);
+        while(1){
+            if(wait(&status) == -1){
+                perror("wait");
+                return 0;
+            }
+            printf("the child process stops. status: %d, signal? %d, exit? %d, continue? %d, stop? %d" ,
+                   WEXITSTATUS(status) , WIFSIGNALED(status) , WIFEXITED(status) , WIFCONTINUED(status) , WIFSTOPPED(status));
+            if(WSTOPSIG(status) == SIGTRAP){
+                if(status & (PTRACE_EVENT_EXIT << 8)){
+                    printf("get the child process while it's exiting");
+                    break;
+                }
+                else if(status & (PTRACE_EVENT_FORK << 8)){
+                    printf("the child process fork a new process");
+                }
+            }
+            if (ptrace(PTRACE_CONT, child, 0, /*WSTOPSIG(status)*/SIGSTOP)) {
+                perror("stopper: ptrace(PTRACE_CONT, ...)");
+                return 1;      
+            }
+        } 
+        if (ptrace(PTRACE_CONT, child, 0, 0)) {
+            perror("stopper: ptrace(PTRACE_CONT, ...)");
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
 int main(int argc, char * argv[])
 {   
     pid_t child;
@@ -66,7 +112,7 @@ int main(int argc, char * argv[])
     }
 
     return 0;
-}
+}*/
 
 /*
 const int long_size = sizeof(long);
