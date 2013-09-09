@@ -24,23 +24,6 @@ int main(int argc, char *argv[])
 		}
 		trace(traced_process);
 	}
-	else if (strcmp(argv[1], "-b") == 0) {
-		traced_process = fork();
-		if (traced_process == 0) {
-			ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-			if (execlp(argv[2], NULL) == -1) {
-				if (errno == ENOENT) {
-					printf("filepath error\n");
-				}
-				else if (errno == EACCES) {
-					printf("authority error\n");
-				}
-			}
-		}
-		else {
-			trace(traced_process);
-		}
-	}
 	
 	return 0;
 }

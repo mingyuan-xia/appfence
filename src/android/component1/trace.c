@@ -17,7 +17,6 @@
 
 const int long_size = sizeof(long);
 const int arm_r1 = 0;
-const int arm_r2 = 1;
 
 long getSysCallNo(pid_t pid)
 {
@@ -103,29 +102,64 @@ void putdata(pid_t child, long addr, char *str)
 void trace(pid_t traced_process) {
 	long orig_eax;
 	int status;
-	char *str;
 	int toggle = 0;
-	long params[2];
+	pid_t child;
+	struct pt_regs regs;
 	while(1) {
 		wait(&status);
 		if(WIFEXITED(status)) {
 			break;
 		}
 		orig_eax = getSysCallNo(traced_process);
-		if(orig_eax == __NR_open) {
+		if (orig_eax == __NR_fork) {
 			if(toggle == 0) {
 				toggle = 1;
-				params[0] = ptrace(PTRACE_PEEKUSER, traced_process, 4 * arm_r1, NULL);
-				params[1] = ptrace(PTRACE_PEEKUSER, traced_process, 4 * arm_r2, NULL);
-				str = (char *)calloc(128, sizeof(char));
-				getdata(traced_process, params[0], str);
-				printf("filepath: %s\n", str);
-				char* newPath = changepath(str);
-				printf("new filepath: %s\n", newPath);
-				putdata(traced_process, params[0], newPath);
 			}
 			else {
+				ptrace(PTRACE_GETREGS, traced_process, NULL, &regs);
+				child = regs.ARM_r0;
 				toggle = 0;
+				pid_t pchild = fork();
+				if (pchild == 0) {
+					printf("trace child's pid: %d\n", child);
+					if(0 != ptrace(PTRACE_ATTACH, child, NULL, NULL))
+					{
+						printf("Trace process failed.\n");
+						exit(0);
+					}
+					long c_orig_eax;
+					int c_status;
+					int c_toggle = 0;
+					char* str;
+					struct pt_regs c_regs;
+					long fpath;
+					while(1) {
+						wait(&c_status);
+						if(WIFEXITED(c_status)) {
+							break;
+						}
+						c_orig_eax = getSysCallNo(child);
+						if (c_orig_eax == __NR_open) {
+							if(c_toggle == 0) {
+								c_toggle = 1;
+								fpath = ptrace(PTRACE_PEEKUSER, child, 4 * arm_r1, NULL);
+								str = (char *)calloc(128, sizeof(char));
+								getdata(child, fpath, str);
+								printf("filepath: %s\n", str);
+								char* newPath = changepath(str);
+								printf("new filepath: %s\n", newPath);
+								putdata(child, fpath, newPath);
+							}
+							else {
+								c_toggle = 0;
+							}
+						}
+						ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+					}
+					exit(0);
+				}
+				else {
+				}
 			}
 		}
 		ptrace(PTRACE_SYSCALL, traced_process, NULL, NULL);

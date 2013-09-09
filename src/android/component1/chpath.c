@@ -31,7 +31,13 @@ char* changepath(char* str)
 	if ((strcmp(p, "system") == 0) || (strcmp(p, "sys") == 0) || (strcmp(p, "dev") == 0) || (strcmp(p, "proc") == 0)) {
 		return str;
 	}
-	char newPath[128] = "/data/sandbox";
+	if (strcmp(p, "data") == 0) {
+		p = strtok(NULL, "/");
+		if (strcmp(p, "dalvik-cache") == 0) {
+			return str;
+		}
+	}
+	char newPath[128] = "/sdcard/sandbox";
 	strcat(newPath, str);
 	str = newPath;
 	createPath(str);
