@@ -24,11 +24,11 @@
 const int long_size = sizeof(long);
 
 /*
-void setuidForChildForkedByPtrace()
+void modifyPidForkedByZygote()
 {
 }
  
-void modifySetuid32(char *str)
+void setuidForPtraceChild(char *str)
 { 
 }*/
 
@@ -99,7 +99,7 @@ int main()
        execl("/bin/ls", "ls", NULL);
     }
     else {
-        long orig_eax;
+        long orig_eax, returnValue;
         long params[1];
         int status;
         char *str, *laddr;
@@ -109,17 +109,12 @@ int main()
             if(WIFEXITED(status))
               break;
             orig_eax = ptrace(PTRACE_PEEKUSER, child, 4 * ORIG_EAX, NULL);
-            if(orig_eax == SYS_setuid32) {
-                if(insyscall == 0) {
+            if(orig_eax == SYS_fork) {
+                if(insyscall == 0) 
                     insyscall = 1;
-                    params[0] = ptrace(PTRACE_PEEKUSER, child, 4 * EBX, NULL);
-                    str = (char *)calloc((params[2]+1)
-                                  * sizeof(char));
-                    getdata(child, params[0], str);
-                    modifySetuid32(str);
-                    putdata(child, params[0], str);
-                }
                 else {
+                    returnValue=ptrace(PTRACE_PEEKUSER, pid, EAX*4, NULL);
+                    printf("process forked by zygote with return value= %ld\n", returnValue);
                     insyscall = 0;
                 }
             }
