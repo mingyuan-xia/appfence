@@ -22,8 +22,9 @@ int main(int argc, char *argv[])
 			printf("Trace process failed.\n");
 			return 1;
 		}
+		printf("pid %d attached.\n", traced_process);
+		ptrace(PTRACE_SETOPTIONS, traced_process, NULL, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
 		trace(traced_process);
 	}
-	
 	return 0;
 }
