@@ -17,6 +17,8 @@
 
 const int long_size = sizeof(long);
 const int arm_r1 = 0;
+const int arm_r2 = 1;
+const long sbx_uid = 20000;
 
 long getSysCallNo(pid_t pid)
 {
@@ -94,74 +96,66 @@ void putdata(pid_t child, long addr, char *str)
 	j = len % long_size;
 	if(j != 0) {
 		memcpy(data.chars, laddr, j);
-		data.chars[j] = 0;
 		ptrace(PTRACE_POKEDATA, child, addr + i * 4, data.val);
 	}
 }
 
 void trace(pid_t traced_process) {
-	long orig_eax;
+	long orig_eax, fpath, uid;
 	int status;
 	int toggle = 0;
-	pid_t child;
-	struct pt_regs regs;
+	pid_t now;
 	while(1) {
-		wait(&status);
-		if(WIFEXITED(status)) {
-			break;
+		now = waitpid(-1, &status, __WALL);
+		
+		if ((status >> 16 == PTRACE_EVENT_FORK) || (status >> 16 == PTRACE_EVENT_VFORK) || (status >> 16 == PTRACE_EVENT_CLONE)) {
+			pid_t newpid;
+			ptrace(PTRACE_GETEVENTMSG, now, NULL, (long) &newpid);
+			printf("pid %d attached.\n", newpid);
+			ptrace(PTRACE_SETOPTIONS, newpid, NULL, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
+			ptrace(PTRACE_SYSCALL, now, NULL, NULL);
+			continue;
 		}
-		orig_eax = getSysCallNo(traced_process);
-		if (orig_eax == __NR_fork) {
-			if(toggle == 0) {
-				toggle = 1;
-			}
-			else {
-				ptrace(PTRACE_GETREGS, traced_process, NULL, &regs);
-				child = regs.ARM_r0;
-				toggle = 0;
-				pid_t pchild = fork();
-				if (pchild == 0) {
-					printf("trace child's pid: %d\n", child);
-					if(0 != ptrace(PTRACE_ATTACH, child, NULL, NULL))
-					{
-						printf("Trace process failed.\n");
-						exit(0);
-					}
-					long c_orig_eax;
-					int c_status;
-					int c_toggle = 0;
-					char* str;
-					struct pt_regs c_regs;
-					long fpath;
-					while(1) {
-						wait(&c_status);
-						if(WIFEXITED(c_status)) {
-							break;
-						}
-						c_orig_eax = getSysCallNo(child);
-						if (c_orig_eax == __NR_open) {
-							if(c_toggle == 0) {
-								c_toggle = 1;
-								fpath = ptrace(PTRACE_PEEKUSER, child, 4 * arm_r1, NULL);
-								str = (char *)calloc(128, sizeof(char));
-								getdata(child, fpath, str);
-								printf("filepath: %s\n", str);
-								char* newPath = changepath(str);
-								printf("new filepath: %s\n", newPath);
-								putdata(child, fpath, newPath);
-							}
-							else {
-								c_toggle = 0;
-							}
-						}
-						ptrace(PTRACE_SYSCALL, child, NULL, NULL);
-					}
-					exit(0);
+		
+		if (now != traced_process) {
+			orig_eax = getSysCallNo(now);
+			
+			if (orig_eax == __NR_open) {
+				if(toggle == 0) {
+					toggle = 1;
+					fpath = ptrace(PTRACE_PEEKUSER, now, 4 * arm_r1, NULL);
+					char *str = (char *)calloc(128, sizeof(char));
+					getdata(now, fpath, str);
+					printf("filepath: %s\n", str);
+					changepath(str);
+					printf("new filepath: %s\n", str);
+					putdata(now, fpath, str);
 				}
 				else {
+					toggle = 0;
+				}
+			}
+			
+			else if (orig_eax == __NR_setuid32) {
+				if (toggle == 0) {
+					uid = ptrace(PTRACE_PEEKUSER, now, 4 * arm_r1, NULL);
+					printf("uid: %d\n", uid);
+					uid = sbx_uid;
+					printf("new uid: %d\n", uid);
+					ptrace(PTRACE_POKEUSER, now, 4 * arm_r1, uid);
+					toggle = 1;
+				}
+				else {
+					toggle = 0;
 				}
 			}
 		}
-		ptrace(PTRACE_SYSCALL, traced_process, NULL, NULL);
+		else {
+			if (WIFEXITED(status)) {
+				break;
+			}
+		}
+		
+		ptrace(PTRACE_SYSCALL, now, NULL, NULL);
 	}
 }
