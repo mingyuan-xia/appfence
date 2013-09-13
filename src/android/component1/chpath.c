@@ -26,20 +26,39 @@ void createPath(char* dir)
 char* changepath(char* str) 
 {
 	char tmp[strlen(str)];
+	char buffer[strlen(str)];
 	strcpy(tmp, str);
+	strcpy(buffer, str);
 	char* p = strtok(tmp, "/");
-	if ((strcmp(p, "system") == 0) || (strcmp(p, "sys") == 0) || (strcmp(p, "dev") == 0) || (strcmp(p, "proc") == 0)) {
-		return str;
+        if ((strcmp(p, "system") == 0) || (strcmp(p, "sys") == 0) || (strcmp(p, "dev") == 0) || (strcmp(p, "proc") == 0) || ((strcmp(p, "acct") == 0))) {
+		return;
 	}
-	if (strcmp(p, "data") == 0) {
+	else if (strcmp(p, "data") == 0) {
 		p = strtok(NULL, "/");
-		if (strcmp(p, "dalvik-cache") == 0) {
-			return str;
+		if ((strcmp(p, "dalvik-cache") == 0) || (strcmp(p, "app") == 0)) {
+			return;
+		}
+		char* filename = strrchr(buffer, '/');
+		strcpy(str, "/data/sbx");
+		strncat(str, filename, strlen(filename));
+	}
+	else if (strcmp(p, "sdcard") == 0) {
+		char* filename = strrchr(buffer, '/');
+		strcpy(str, "/sdcard/sbx");
+		strncat(str, filename, strlen(filename));
+	}
+	else if (strcmp(p, "mnt") == 0) {
+		p = strtok(NULL, "/");
+		if ((strcmp(p, "sdcard") == 0)) {
+			char* filename = strrchr(buffer, '/');
+			strcpy(str, "/sdcard/sbx");
+			strncat(str, filename, strlen(filename));
 		}
 	}
-	char newPath[128] = "/sdcard/sandbox";
-	strcat(newPath, str);
-	str = newPath;
+	else {
+		char* filename = strrchr(buffer, '/');
+		strcpy(str, "/sdcard/sbx");
+		strncat(str, filename, strlen(filename));
+	}
 	createPath(str);
-	return str;
 }
