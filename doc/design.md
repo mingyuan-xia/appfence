@@ -25,5 +25,6 @@ So in the context of the launch initiator (the `Launcher` app, no `fork` will be
 ## Sandboxing
 
 ## Reference 
+* [StackOverflow: How to ptrace a multi-threaded application?](http://stackoverflow.com/questions/5477976/how-to-ptrace-a-multi-threaded-application)
 
 [initial]: initial.jpg "Initial phase"
