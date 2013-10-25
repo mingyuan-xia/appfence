@@ -26,5 +26,5 @@ So in the context of the launch initiator (the `Launcher` app, no `fork` will be
 
 ## Reference 
 * [StackOverflow: How to ptrace a multi-threaded application?](http://stackoverflow.com/questions/5477976/how-to-ptrace-a-multi-threaded-application)
-
+* [Ptrace-Linux man page](http://linux.die.net/man/2/ptrace)
 [initial]: initial.jpg "Initial phase"
