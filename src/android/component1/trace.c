@@ -95,7 +95,7 @@ void putdata(pid_t child, long addr, char *str)
 	}
 	j = len % long_size;
 	if(j != 0) {
-		memcpy(data.chars, laddr, j);
+		memcpy(data.chars, laddr, j + 1);
 		ptrace(PTRACE_POKEDATA, child, addr + i * 4, data.val);
 	}
 }
@@ -127,28 +127,31 @@ void trace(pid_t traced_process) {
 					char *str = (char *)calloc(128, sizeof(char));
 					getdata(now, fpath, str);
 					printf("filepath: %s\n", str);
-					changepath(str);
-					printf("new filepath: %s\n", str);
-					putdata(now, fpath, str);
+					int result = changepath(str);
+                                        if(result > 0){
+					  putdata(now, fpath, str);
+					  printf("new filepath: %s\n", str);
+                                        }
+                                        free(str);
 				}
 				else {
 					toggle = 0;
 				}
 			}
 			
-			else if (orig_eax == __NR_setuid32) {
-				if (toggle == 0) {
-					uid = ptrace(PTRACE_PEEKUSER, now, 4 * arm_r1, NULL);
-					printf("uid: %d\n", uid);
-					uid = sbx_uid;
-					printf("new uid: %d\n", uid);
-					ptrace(PTRACE_POKEUSER, now, 4 * arm_r1, uid);
-					toggle = 1;
-				}
-				else {
-					toggle = 0;
-				}
-			}
+			/* else if (orig_eax == __NR_setuid32) { */
+			/* 	if (toggle == 0) { */
+			/* 		uid = ptrace(PTRACE_PEEKUSER, now, 4 * arm_r1, NULL); */
+			/* 		printf("uid: %d\n", uid); */
+			/* 		uid = sbx_uid; */
+			/* 		printf("new uid: %d\n", uid); */
+			/* 		ptrace(PTRACE_POKEUSER, now, 4 * arm_r1, uid); */
+			/* 		toggle = 1; */
+			/* 	} */
+			/* 	else { */
+			/* 		toggle = 0; */
+			/* 	} */
+			/* } */
 		}
 		else {
 			if (WIFEXITED(status)) {
