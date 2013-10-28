@@ -5,3 +5,6 @@ export PATH := $(PATH):/usr/local/android-ndk-r9
 
 all:
 	ndk-build -B
+
+clean:
+	ndk-build clean
