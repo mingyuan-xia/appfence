@@ -1,0 +1,7 @@
+# eclipse, note that we need .project and .cproject
+.settings
+
+# android stuff
+libs/
+obj/
+bin/
