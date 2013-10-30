@@ -8,7 +8,15 @@
 
 #include <sys/types.h>
 
+/**
+ * Find the zygote process pid from the OS
+ */
 extern pid_t zygote_find_process(void);
-extern void ptrace_zygote(pid_t pid);
+
+/**
+ * Ptrace the zygote process until it forks a new process
+ * Once the zygote forks a child, zygote will be released and the child pid will be returned
+ */
+extern pid_t ptrace_zygote(pid_t zygote_pid);
 
 #endif /* ZYGOTE_HELPER_H_ */
