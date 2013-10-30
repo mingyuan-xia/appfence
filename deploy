@@ -1,0 +1,6 @@
+adb forward tcp:5040 tcp:5040
+adb push libs/armeabi/appfence /data/atrace
+adb push libs/armeabi/gdbserver /data/atrace
+adb shell chmod 777 /data/atrace/appfence
+adb shell chmod 777 /data/atrace/gdbserver
+adb shell /data/atrace/gdbserver :5040 /data/atrace/appfence

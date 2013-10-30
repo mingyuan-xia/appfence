@@ -15,6 +15,10 @@ extern void trace(pid_t traced_process);
 int main(int argc, char *argv[])
 {
 	pid_t traced_process;
+	if (argc <= 1) {
+		printf("Usage: appfence -p pid\n");
+		return 0;
+	}
 	if (strcmp(argv[1], "-p") == 0) {
 		traced_process = atoi(argv[2]);	
 		if(0 != ptrace(PTRACE_ATTACH, traced_process, NULL, NULL))
