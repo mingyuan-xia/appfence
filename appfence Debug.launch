@@ -40,7 +40,7 @@
 <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="obj/local/armeabi/appfence"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="appfence"/>
 <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
-<stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="0.1102292149"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="com.android.toolchain.gcc.1412729113"/>
 <booleanAttribute key="org.eclipse.cdt.launch.ui.ApplicationCDebuggerTab.DEFAULTS_SET" value="true"/>
 <booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">

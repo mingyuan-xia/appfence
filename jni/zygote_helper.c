@@ -57,21 +57,26 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 
 	while (1) {
 		/* wait until zygote sends a signal */
-		assert(zygote_pid == waitpid(zygote_pid, &status, __WALL));
+		/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
+		int pid = waitpid(-1, &status, __WALL);
 		/* retrieve the event header */
-		printf("ev from %d\n", zygote_pid);
-		if (IS_FORK_EVENT(status) || IS_VFORK_EVENT(status) || IS_CLONE_EVENT(status)) {
-			pid_t newpid;
-			/* get the forked child pid from the msg */
-			ptrace(PTRACE_GETEVENTMSG, zygote_pid, NULL, &newpid);
-			/* the child is already ptraced since we have PTRACE_O_TRACEFORK */
-			printf("zygote forks %d\n", newpid);
-			/* let zygote continue and go*/
-			ptrace(PTRACE_CONT, zygote_pid, NULL, NULL);
-			ptrace_detach(zygote_pid);
-			return newpid;
+		if(pid == zygote_pid){
+			if (IS_FORK_EVENT(status) || IS_VFORK_EVENT(status) || IS_CLONE_EVENT(status)) {
+				printf("ev from %d\n", zygote_pid);
+				pid_t newpid;
+				/* get the forked child pid from the msg */
+				ptrace(PTRACE_GETEVENTMSG, zygote_pid, NULL, &newpid);
+				/* the child is already ptraced since we have PTRACE_O_TRACEFORK */
+				printf("zygote forks %d\n", newpid);
+				/* let zygote continue and go*/
+				ptrace(PTRACE_CONT, zygote_pid, NULL, NULL);
+				ptrace_detach(zygote_pid);
+				/* return newpid; */
+			}
+		} else {
+			printf("msg from the child %d\n", waitpid(pid, &status, __WALL));
 		}
-		ptrace(PTRACE_CONT, zygote_pid, NULL, NULL);
+		ptrace(PTRACE_CONT, pid, NULL, NULL);
 	}
 	return -1;
 }
