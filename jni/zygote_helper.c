@@ -70,11 +70,11 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				printf("zygote forks %d\n", newpid);
 				/* let zygote continue and go*/
 				ptrace(PTRACE_CONT, zygote_pid, NULL, NULL);
-				ptrace_detach(zygote_pid);
+				/* ptrace_detach(zygote_pid); */
 				/* return newpid; */
 			}
 		} else {
-			printf("msg from the child %d\n", waitpid(pid, &status, __WALL));
+			printf("msg from the child %d\n", pid);
 		}
 		ptrace(PTRACE_CONT, pid, NULL, NULL);
 	}
