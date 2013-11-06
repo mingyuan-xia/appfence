@@ -69,14 +69,16 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				/* the child is already ptraced since we have PTRACE_O_TRACEFORK */
 				printf("zygote forks %d\n", newpid);
 				/* let zygote continue and go*/
-				ptrace(PTRACE_CONT, zygote_pid, NULL, NULL);
-				/* ptrace_detach(zygote_pid); */
-				/* return newpid; */
 			}
+		} else if (pid > 0){
+			/* printf("msg from the child %d\n", pid); */
+			handle_syscall(pid);
 		} else {
-			printf("msg from the child %d\n", pid);
+			break;
 		}
-		ptrace(PTRACE_CONT, pid, NULL, NULL);
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	}
 	return -1;
 }
+
+

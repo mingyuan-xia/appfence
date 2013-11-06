@@ -15,7 +15,6 @@ extern pid_t zygote_find_process(void);
 
 /**
  * Ptrace the zygote process until it forks a new process
- * Once the zygote forks a child, zygote will be released and the child pid will be returned
  */
 extern pid_t ptrace_zygote(pid_t zygote_pid);
 

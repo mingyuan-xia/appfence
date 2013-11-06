@@ -123,7 +123,7 @@ void trace(pid_t traced_process) {
 			if (orig_eax == __NR_open) {
 				if(toggle == 0) {
 					toggle = 1;
-					fpath = ptrace(PTRACE_PEEKUSER, now, 4 * arm_r1, NULL);
+					fpath = ptrace(PTRACE_PEEKUSER, now, 4 * arm_r2, NULL);
 					char *str = (char *)calloc(128, sizeof(char));
 					getdata(now, fpath, str);
 					printf("filepath: %s\n", str);
