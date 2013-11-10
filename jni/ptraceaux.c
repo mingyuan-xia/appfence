@@ -104,4 +104,5 @@ int handle_syscall(pid_t pid)
 			break;
 		}
 	}
+	return 0;
 }
