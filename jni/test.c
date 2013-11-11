@@ -4,7 +4,7 @@
  */
 
 #include "zygote_helper.h"
-#include "process_helper.h"
+#include "sandbox_helper.h"
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 #include <signal.h>
@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 {
 	pid_t pid = ptrace_zygote(zygote_find_process());
 	if(pid > 0) {
-		ptrace_process(pid);
+		ptrace_app_process(pid);
 	}
 	/* int status; */
 	/* printf("msg from the child %d\n", waitpid(pid, &status, __WALL)); */

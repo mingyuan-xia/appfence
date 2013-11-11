@@ -27,7 +27,7 @@ void ptrace_setopt(pid_t pid, int opt)
 
 void init_ptrace_tool(int arch)
 {
-	//TODO: init the tool sturcture depend on arch
+	//TODO: init the tool structure depending on arch
 }
 
 #define WORD_SIZE 4

@@ -38,7 +38,7 @@ void init_ptrace_tool(int arch);
 extern void ptrace_setopt(pid_t pid, int opt);
 
 /**
- *  Handle STOPSIG from child process forked by zygote
+ *  Handle SIGSTOP from child process forked by zygote
  */
 extern int handle_syscall(pid_t pid);
 

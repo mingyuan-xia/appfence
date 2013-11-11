@@ -43,6 +43,7 @@ pid_t zygote_find_process(void)
 #define IS_FORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8)))
 #define IS_VFORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_VFORK<<8)))
 #define IS_CLONE_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_CLONE<<8)))
+/* SIGSTOP?? PTRACE-stop?? */
 #define IS_TRAP(status) (status>>8 == 0x13)
 
 pid_t ptrace_zygote(pid_t zygote_pid)
@@ -73,9 +74,12 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				/* let zygote continue and go*/
 			}
 		} else if (pid > 0){
+			/* this is possibly the child */
 			if (IS_TRAP(status)) {
+				/* appfence parent detaches the app process */
 				ptrace_detach(pid);
 				if(fork() == 0) {
+					/* appfence child detaches zygote and returns the app pid */
 					ptrace_detach(zygote_pid);
 					return pid;
 				}
