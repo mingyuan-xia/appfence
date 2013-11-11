@@ -8,6 +8,9 @@
 
 #include <sys/types.h>
 
+#define ARCH_X86 1
+#define ARCH_ARM 2
+
 /**
  * Attach to a running process
  */
@@ -18,26 +21,16 @@ extern int ptrace_attach(pid_t pid);
  */
 extern int ptrace_attach(pid_t pid);
 
-/**
- * Read data from a ptraced process
- */
-extern void ptrace_read_data(pid_t pid, void *buf, void *addr, int nbytes);
+struct {
+	void (*ptrace_read_data) (pid_t pid, void *buf, void *addr, int nbytes);
+	void (*ptrace_strlen) (pid_t pid, void *addr);
+	void (*ptrace_write_data) (pid_t pid, void *buf, void *addr, int nbytes);
+	int (*ptrace_get_syscall_nr) (pid_t pid);
 
-/**
- * Read the length of string beginning at addr
- */
-extern int ptrace_strlen(pid_t pid, void *addr);
+} ptrace_tool;
 
-/**
- * Write data to a ptraced process
- */
-extern void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes);
+void init_ptrace_tool(int arch);
 
-
-/**
- * Retrieve the system call number from a stopped ptraced process
- */
-extern int ptrace_get_syscall_nr(pid_t pid);
 
 /**
  * Set the option for a ptraced process

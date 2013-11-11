@@ -19,6 +19,17 @@ int ptrace_detach(pid_t pid)
 	return ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
 
+void ptrace_setopt(pid_t pid, int opt)
+{
+	ptrace(PTRACE_SETOPTIONS, pid, NULL, (void *)opt);
+}
+
+
+void init_ptrace_tool(int arch)
+{
+	//TODO: init the tool sturcture depend on arch
+}
+
 #define WORD_SIZE 4
 
 void ptrace_read_data(pid_t pid, void *buf, void *addr, int nbytes)
@@ -80,10 +91,6 @@ int ptrace_get_syscall_nr(pid_t pid)
 	}
 	return scno;
 
-}
-void ptrace_setopt(pid_t pid, int opt)
-{
-	ptrace(PTRACE_SETOPTIONS, pid, NULL, (void *)opt);
 }
 
 int handle_syscall(pid_t pid)

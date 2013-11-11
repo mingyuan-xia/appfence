@@ -43,6 +43,7 @@ pid_t zygote_find_process(void)
 #define IS_FORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8)))
 #define IS_VFORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_VFORK<<8)))
 #define IS_CLONE_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_CLONE<<8)))
+#define IS_TRAP(status) (status>>8 == 0x13)
 
 pid_t ptrace_zygote(pid_t zygote_pid)
 {
@@ -59,6 +60,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 		/* wait until zygote sends a signal */
 		/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
 		int pid = waitpid(-1, &status, __WALL);
+		/* printf("pid: %d, status %x, SIGTRAP %x\n", pid, status, SIGTRAP); */
 		/* retrieve the event header */
 		if(pid == zygote_pid){
 			if (IS_FORK_EVENT(status) || IS_VFORK_EVENT(status) || IS_CLONE_EVENT(status)) {
@@ -71,8 +73,13 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				/* let zygote continue and go*/
 			}
 		} else if (pid > 0){
-			/* printf("msg from the child %d\n", pid); */
-			handle_syscall(pid);
+			if (IS_TRAP(status)) {
+				ptrace_detach(pid);
+				if(fork() == 0) {
+					ptrace_detach(zygote_pid);
+					return pid;
+				}
+			}
 		} else {
 			break;
 		}
