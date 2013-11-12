@@ -62,6 +62,20 @@ int ptrace_strlen(pid_t pid, void *addr)
 
 void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes)
 {
+	//TODO: test this function
+	int remaining = nbytes, copy, offset = 0;
+	char *dst = (char *)addr, *src = (char *)buf;
+	while (remaining > 0) {
+		long v;
+		copy = (remaining < WORD_SIZE ? remaining : WORD_SIZE);
+		memcpy(v, src + offset, copy);
+
+		//this may cause some problem
+		//it always write back a word
+		ptrace(PTRACE_POKEDATA, pid, dst + offset, v);
+		offset += WORD_SIZE;
+		remaining -= WORD_SIZE;
+	}
 }
 
 #define EABI		0xef000000

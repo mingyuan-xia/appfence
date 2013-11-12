@@ -33,6 +33,7 @@ pid_t ptrace_app_process(pid_t pid)
 			{
 				//arg1 is oflag
 				long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
+				//TODO: determine which file need to keep isolation
 				if(IS_WRITE(arg1)){
 					//first arg of open is path addr
 					long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
@@ -40,6 +41,7 @@ pid_t ptrace_app_process(pid_t pid)
 					char path[len + 1];
 					ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len);
 					path[len] = 0;
+					//TODO: change the path
 					/* ptrace_write_data(pid, path, (void*)regs.ARM_r1, regs.ARM_r2+1); */
 					printf("pid %d open: %s\n",pid, path);
 				}
@@ -49,7 +51,7 @@ pid_t ptrace_app_process(pid_t pid)
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(pid, &status, __WALL);
 		//syscall return
-		//TODO
+		//TODO: reset the path if changed previously
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(pid, &status, __WALL);
