@@ -25,10 +25,8 @@ void ptrace_setopt(pid_t pid, int opt)
 }
 
 
-void init_ptrace_tool(int arch)
-{
-	//TODO: init the tool sturcture depend on arch
-}
+
+// ARM tool implementation
 
 #define WORD_SIZE 4
 
@@ -93,23 +91,16 @@ int ptrace_get_syscall_nr(pid_t pid)
 
 }
 
-int handle_syscall(pid_t pid)
+
+void init_ptrace_tool(int arch)
 {
-	long syscall_no =  ptrace_get_syscall_nr(pid);
-	struct pt_regs regs;
-	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-	/* printf("pid %d : %d sysno \n", pid, (int)syscall_no); */
-	switch(syscall_no){
-		case __NR_open:
-		{
-			
-			/* int len = ptrace_strlen(pid, addr); */
-			char path[regs.ARM_r2 + 1];
-			printf("r1: %ld, r2: %ld\n", regs.ARM_r1, regs.ARM_r2);
-			ptrace_write_data(pid, path, (void*)regs.ARM_r1, regs.ARM_r2+1);
-			printf("pid %d open: %s\n",pid, path);
+	switch(arch){
+		case ARCH_ARM:
+			ptrace_tool.ptrace_read_data = ptrace_read_data;
+			ptrace_tool.ptrace_strlen = ptrace_strlen;
+			ptrace_tool.ptrace_write_data = ptrace_write_data;
+			ptrace_tool.ptrace_get_syscall_nr = ptrace_get_syscall_nr;
 			break;
-		}
+	
 	}
-	return 0;
 }

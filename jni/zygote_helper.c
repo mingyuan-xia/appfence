@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "zygote_helper.h"
+#include "ptraceaux.h"
 
 #define DEFAULT_ZYGOTE_PID 37
 
@@ -43,7 +44,6 @@ pid_t zygote_find_process(void)
 #define IS_FORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8)))
 #define IS_VFORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_VFORK<<8)))
 #define IS_CLONE_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_CLONE<<8)))
-#define IS_TRAP(status) (status>>8 == 0x13)
 
 pid_t ptrace_zygote(pid_t zygote_pid)
 {
@@ -73,11 +73,13 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				/* let zygote continue and go*/
 			}
 		} else if (pid > 0){
-			if (IS_TRAP(status)) {
-				ptrace_detach(pid);
+			if (!WIFEXITED(status)) {
 				if(fork() == 0) {
 					ptrace_detach(zygote_pid);
+					/* ptrace_attach(pid); */
 					return pid;
+				} else {
+					ptrace_detach(pid);
 				}
 			}
 		} else {

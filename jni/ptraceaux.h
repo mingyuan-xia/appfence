@@ -19,11 +19,11 @@ extern int ptrace_attach(pid_t pid);
 /**
  * Detach a ptraced process
  */
-extern int ptrace_attach(pid_t pid);
+extern int ptrace_detach(pid_t pid);
 
 struct {
 	void (*ptrace_read_data) (pid_t pid, void *buf, void *addr, int nbytes);
-	void (*ptrace_strlen) (pid_t pid, void *addr);
+	int (*ptrace_strlen) (pid_t pid, void *addr);
 	void (*ptrace_write_data) (pid_t pid, void *buf, void *addr, int nbytes);
 	int (*ptrace_get_syscall_nr) (pid_t pid);
 
