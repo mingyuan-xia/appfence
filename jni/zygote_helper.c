@@ -75,6 +75,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 		} else if (pid > 0){
 			if (!WIFEXITED(status)) {
 				if(fork() == 0) {
+					/* appfence child detaches zygote and returns the app pid */
 					ptrace_detach(zygote_pid);
 					/* ptrace_attach(pid); */
 					return pid;

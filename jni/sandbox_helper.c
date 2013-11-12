@@ -1,6 +1,6 @@
 /*
  * process_helper.c
- * Implementation of process.h
+ * Implementation of process_helper.h
  */
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "process_helper.h"
+#include "sandbox_helper.h"
 #include "ptraceaux.h"
 
 pid_t ptrace_process(pid_t pid){
