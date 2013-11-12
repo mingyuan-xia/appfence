@@ -13,7 +13,7 @@
 #include "sandbox_helper.h"
 #include "ptraceaux.h"
 
-pid_t ptrace_process(pid_t pid){
+pid_t ptrace_app_process(pid_t pid){
 	if (ptrace_attach(pid)) {
 		return -1;
 	}
