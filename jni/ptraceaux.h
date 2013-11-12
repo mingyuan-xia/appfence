@@ -26,6 +26,7 @@ struct {
 	int (*ptrace_strlen) (pid_t pid, void *addr);
 	void (*ptrace_write_data) (pid_t pid, void *buf, void *addr, int nbytes);
 	int (*ptrace_get_syscall_nr) (pid_t pid);
+	long (*ptrace_get_syscall_arg) (pid_t pid, int n);
 
 } ptrace_tool;
 

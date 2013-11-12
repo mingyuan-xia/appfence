@@ -46,12 +46,15 @@ void ptrace_read_data(pid_t pid, void *buf, void *addr, int nbytes)
 	}
 }
 
-int ptrace_strlen(pid_t pid, void *addr){
+int ptrace_strlen(pid_t pid, void *addr)
+{
 	int length = 0;
 	while(1) {
-		long v = ptrace(PTRACE_PEEKDATA, pid, addr + length, NULL);
-		long test = 0xff000000;
-		for(; test & v != 0; test >> 8, length++);
+		unsigned long v = ptrace(PTRACE_PEEKDATA, pid, addr + length, NULL);
+		unsigned long test = 0x000000ff;
+		for(; (test & v) != 0; test <<= 8){
+			length++;
+		}
 		if(test != 0) break;
 	}
 	return length;
@@ -67,7 +70,7 @@ void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes)
 #define FIX_SYS		0x000fffff
 
 
-int ptrace_get_syscall_nr(pid_t pid)
+int ARM_ptrace_get_syscall_nr(pid_t pid)
 {
 	long scno = 0;
 	struct pt_regs regs;
@@ -88,7 +91,25 @@ int ptrace_get_syscall_nr(pid_t pid)
 		scno &= FIX_SYS;
 	}
 	return scno;
+}
 
+long ARM_ptrace_get_syscall_arg(pid_t pid, int n)
+{
+	struct pt_regs regs;
+	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+	switch(n)
+	{
+		case 0:
+			return regs.ARM_r0;
+		case 1:
+			return regs.ARM_r1;
+		case 2:
+			return regs.ARM_r2;
+		case 3:
+			return regs.ARM_r3;
+		default:
+			return -1;
+	}
 }
 
 
@@ -99,7 +120,8 @@ void init_ptrace_tool(int arch)
 			ptrace_tool.ptrace_read_data = ptrace_read_data;
 			ptrace_tool.ptrace_strlen = ptrace_strlen;
 			ptrace_tool.ptrace_write_data = ptrace_write_data;
-			ptrace_tool.ptrace_get_syscall_nr = ptrace_get_syscall_nr;
+			ptrace_tool.ptrace_get_syscall_nr = ARM_ptrace_get_syscall_nr;
+			ptrace_tool.ptrace_get_syscall_arg = ARM_ptrace_get_syscall_arg;
 			break;
 	
 	}

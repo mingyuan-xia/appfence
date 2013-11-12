@@ -22,23 +22,26 @@ pid_t ptrace_app_process(pid_t pid){
 	int status;
 
 	while(pid > 0){
-		/* printf("addr : %x\n", ptrace_tool.ptrace_get_syscall_nr); */
+		//syscall enter
 		long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
-	/* 	struct pt_regs regs; */
-	/* 	ptrace(PTRACE_GETREGS, pid, NULL, &regs); */
-		printf("pid %d : %d sysno \n", pid, (int)syscall_no);
-		/* switch(syscall_no){ */
-		/* 	case __NR_open: */
-		/* 	{ */
-				
-		/* 		/1* int len = ptrace_strlen(pid, addr); *1/ */
-		/* 		char path[regs.ARM_r2 + 1]; */
-		/* 		printf("r1: %ld, r2: %ld\n", regs.ARM_r1, regs.ARM_r2); */
-		/* 		/1* ptrace_write_data(pid, path, (void*)regs.ARM_r1, regs.ARM_r2+1); *1/ */
-		/* 		printf("pid %d open: %s\n",pid, path); */
-		/* 		break; */
-		/* 	} */
-		/* } */
+		switch(syscall_no){
+			case __NR_open:
+			{
+				long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+				int len = ptrace_strlen(pid, (void*) arg0);
+				char path[len + 1];
+				ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len);
+				path[len] = 0;
+				/* ptrace_write_data(pid, path, (void*)regs.ARM_r1, regs.ARM_r2+1); */
+				printf("pid %d open: %s\n",pid, path);
+				break;
+			}
+		}
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
+		//syscall return
+		//TODO
+
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(pid, &status, __WALL);
 	}
