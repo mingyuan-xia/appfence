@@ -68,20 +68,20 @@ pid_t ptrace_app_process(pid_t pid, int sandbox)
 
 				// return from open syscall, reset the path
 				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				pid = waitpid(-1, &status, __WALL);
+				pid = waitpid(pid, &status, __WALL);
 
 				ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1 + prefix_len);
 
 				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				pid = waitpid(-1, &status, __WALL);
+				pid = waitpid(pid, &status, __WALL);
 				continue;
 			}
 		}
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(-1, &status, __WALL);
+		pid = waitpid(pid, &status, __WALL);
 		//syscall return
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(-1, &status, __WALL);
+		pid = waitpid(pid, &status, __WALL);
 	}
 	ptrace_detach(pid);
 	printf("%d exit\n", pid);
