@@ -62,13 +62,18 @@ int ptrace_strlen(pid_t pid, void *addr)
 
 void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes)
 {
-	//TODO: test this function
 	int remaining = nbytes, copy, offset = 0;
 	char *dst = (char *)addr, *src = (char *)buf;
 	while (remaining > 0) {
 		long v;
 		copy = (remaining < WORD_SIZE ? remaining : WORD_SIZE);
-		memcpy((void *)v, (void *)(src + offset), copy);
+		if(copy < WORD_SIZE){
+			/* avoid destroy the memory after dst */
+			v = ptrace(PTRACE_PEEKDATA, pid, dst + offset, NULL);
+			memcpy(&v, (void *)(src + offset), copy);
+		} else {
+			memcpy(&v, (void *)(src + offset), copy);
+		}
 
 		//this may cause some problem
 		//it always write back a word

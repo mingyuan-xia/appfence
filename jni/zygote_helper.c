@@ -73,6 +73,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				/* let zygote continue and go*/
 			}
 		} else if (pid > 0){
+			/* ignore signal from child process of current process */
 			if (!WIFEXITED(status)) {
 				if(fork() == 0) {
 					/* appfence child detaches zygote and returns the app pid */
