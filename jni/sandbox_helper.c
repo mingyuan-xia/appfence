@@ -30,9 +30,11 @@ void createPath(char* dir);
 
 pid_t ptrace_app_process(pid_t pid, int sandbox)
 {
+	/*
 	if (ptrace_attach(pid)) {
 		return -1;
 	}
+	*/
 	printf("%d tracing process %d\n", getpid(), pid);
 
 	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);

@@ -51,6 +51,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 
 	/* keep an eye on zygote */
 	if (ptrace_attach(zygote_pid)) {
+		printf("Error: ptrace zygote failed\n");
 		return -1;
 	}
 	/* note that we set O_TRACEFORK to automatically ptrace the child forked by zygote */
@@ -60,7 +61,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 		/* wait until zygote sends a signal */
 		/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
 		int pid = waitpid(-1, &status, __WALL);
-		/* printf("pid: %d, status %x, SIGTRAP %x\n", pid, status, SIGTRAP); */
+		printf("pid: %d, status %x\n", pid, status);
 		/* retrieve the event header */
 		if(pid == zygote_pid){
 			if (IS_FORK_EVENT(status) || IS_VFORK_EVENT(status) || IS_CLONE_EVENT(status)) {
@@ -71,23 +72,19 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 				/* the child is already ptraced since we have PTRACE_O_TRACEFORK */
 				printf("zygote forks %d\n", newpid);
 				/* let zygote continue and go*/
+				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+				ptrace_detach(zygote_pid);
+				return newpid;
 			}
+			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		} else if (pid > 0){
-			/* ignore signal from child process of current process */
-			if (!WIFEXITED(status)) {
-				if(fork() == 0) {
-					/* appfence child detaches zygote and returns the app pid */
-					ptrace_detach(zygote_pid);
-					/* ptrace_attach(pid); */
-					return pid;
-				} else {
-					ptrace_detach(pid);
-				}
-			}
+			/* appfence detaches zygote and returns the app pid */
+			printf("app process sneaks in\n");
+			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		} else {
+			printf("Error: unexpected events\n");
 			break;
 		}
-		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	}
 	return -1;
 }

@@ -12,24 +12,25 @@
 #include <stdio.h>
 #include <string.h>
 
+#define SANDBOX_OPTION 1
+
 int main(int argc, char *argv[])
 {
+	int status;
 	init_ptrace_tool(ARCH_ARM);
-	int sandbox = 0;
-	if(argc > 1 && strcmp(argv[1],"-o") == 0){
-		sandbox = 1;
-		printf("***************\nsandbox on!!\n***************\n");
-	} else {
-		printf("***************\nsandbox off! (-o to turn on)\n***************\n");
-	}
 	pid_t pid = ptrace_zygote(zygote_find_process());
 	if(pid > 0) {
-		ptrace_app_process(pid, sandbox);
+		ptrace_setopt(pid, 0);
+		while (1) {
+			/* wait until zygote sends a signal */
+			/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
+			int pid = waitpid(-1, &status, __WALL);
+			printf("test:pid=%d, status %x\n", pid, status);
+			ptrace(PTRACE_CONT, pid, NULL, NULL);
+			ptrace_detach(pid);
+		}
+		// ptrace_app_process(pid, SANDBOX_OPTION);
 	}
-	/* int status; */
-	/* printf("msg from the child %d\n", waitpid(pid, &status, __WALL)); */
-	/* ptrace(PTRACE_CONT, pid, NULL, NULL); */
-	/* ptrace(PTRACE_DETACH, pid, NULL, NULL); */
 	return 0;
 }
 
