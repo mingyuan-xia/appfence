@@ -5,6 +5,7 @@
 
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <string.h>
 #include <stdio.h>
 #include "ptraceaux.h"
@@ -26,7 +27,6 @@ void ptrace_setopt(pid_t pid, int opt)
 
 
 
-// ARM tool implementation
 
 #define WORD_SIZE 4
 
@@ -68,15 +68,50 @@ void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes)
 	while (remaining > 0) {
 		long v;
 		copy = (remaining < WORD_SIZE ? remaining : WORD_SIZE);
-		memcpy(v, src + offset, copy);
+		memcpy((void *)v, (void *)(src + offset), copy);
 
 		//this may cause some problem
 		//it always write back a word
-		ptrace(PTRACE_POKEDATA, pid, dst + offset, v);
+		ptrace(PTRACE_POKEDATA, pid, (void *)(dst + offset), (void *)v);
 		offset += WORD_SIZE;
 		remaining -= WORD_SIZE;
 	}
 }
+
+//X86 tool implementation
+
+long X86_ptrace_get_syscall_nr(pid_t pid)
+{
+	/* struct pt_regs regs; */
+	/* ptrace(PTRACE_GETREGS, pid, NULL, &regs); */
+	/* return regs.ax; */
+}
+
+long X86_ptrace_get_syscall_arg(pid_t pid, int n)
+{
+	/* struct pt_regs regs; */
+	/* ptrace(PTRACE_GETREGS, pid, NULL, &regs); */
+	/* switch(n) { */
+	/* 	case 0: */
+	/* 		return regs.bx; */
+	/* 	case 1: */
+	/* 		return regs.cx; */
+	/* 	case 2: */
+	/* 		return regs.dx; */
+	/* 	case 3: */
+	/* 		return regs.si; */
+	/* 	case 4: */
+	/* 		return regs.di; */
+	/* 	case 5: */
+	/* 		return regs.bp; */
+	/* 	default: */
+	/* 		return -1; */
+	/* } */
+ 
+}
+
+
+// ARM tool implementation
 
 #define EABI		0xef000000
 #define FIX_OABI	0x0ff00000
@@ -84,7 +119,7 @@ void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes)
 #define FIX_SYS		0x000fffff
 
 
-int ARM_ptrace_get_syscall_nr(pid_t pid)
+long ARM_ptrace_get_syscall_nr(pid_t pid)
 {
 	long scno = 0;
 	struct pt_regs regs;
@@ -111,8 +146,7 @@ long ARM_ptrace_get_syscall_arg(pid_t pid, int n)
 {
 	struct pt_regs regs;
 	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-	switch(n)
-	{
+	switch(n) {
 		case 0:
 			return regs.ARM_r0;
 		case 1:
@@ -129,13 +163,17 @@ long ARM_ptrace_get_syscall_arg(pid_t pid, int n)
 
 void init_ptrace_tool(int arch)
 {
+	ptrace_tool.ptrace_read_data = ptrace_read_data;
+	ptrace_tool.ptrace_strlen = ptrace_strlen;
+	ptrace_tool.ptrace_write_data = ptrace_write_data;
 	switch(arch){
 		case ARCH_ARM:
-			ptrace_tool.ptrace_read_data = ptrace_read_data;
-			ptrace_tool.ptrace_strlen = ptrace_strlen;
-			ptrace_tool.ptrace_write_data = ptrace_write_data;
 			ptrace_tool.ptrace_get_syscall_nr = ARM_ptrace_get_syscall_nr;
 			ptrace_tool.ptrace_get_syscall_arg = ARM_ptrace_get_syscall_arg;
+			break;
+		case ARCH_X86:
+			ptrace_tool.ptrace_get_syscall_nr = X86_ptrace_get_syscall_nr;
+			ptrace_tool.ptrace_get_syscall_arg = X86_ptrace_get_syscall_arg;
 			break;
 	
 	}
