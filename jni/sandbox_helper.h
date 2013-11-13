@@ -11,6 +11,6 @@
  /**
   * Ptrace the app process until it forks a new process
   */
- extern pid_t ptrace_app_process(pid_t pid);
+ extern pid_t ptrace_app_process(pid_t pid, int sandbox);
 
 #endif /* PROCESS_HELPER_H_ */

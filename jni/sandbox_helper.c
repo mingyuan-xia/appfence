@@ -28,7 +28,7 @@ void createPath(char* dir);
 
 #define IS_WRITE(oflag) ((oflag & O_WRONLY) != 0 || (oflag & O_RDWR) != 0)
 
-pid_t ptrace_app_process(pid_t pid)
+pid_t ptrace_app_process(pid_t pid, int sandbox)
 {
 	if (ptrace_attach(pid)) {
 		return -1;
@@ -55,15 +55,16 @@ pid_t ptrace_app_process(pid_t pid)
 			char path[len + 1 + prefix_len];
 			//first arg of open is path addr
 			ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1 + prefix_len);
-			if(is_data_path(path)){
+			printf("pid %d open: %s\n",pid, path);
+			if(sandbox && is_data_path(path)){
 				// change to new path
 				char new_path[len + 1 + prefix_len];
 				strcpy(new_path, sandbox_prefix);
 				strcat(new_path, path);
-				printf("pid %d open: %s\n new path: %s\n",pid, path, new_path);
 				ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1 + prefix_len);
 				// create require folder
 				createPath(new_path);
+				printf("pid %d new path: %s\n",pid, new_path);
 
 				// return from open syscall, reset the path
 				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
@@ -79,7 +80,6 @@ pid_t ptrace_app_process(pid_t pid)
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(-1, &status, __WALL);
 		//syscall return
-
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(-1, &status, __WALL);
 	}
