@@ -60,7 +60,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 		/* wait until zygote sends a signal */
 		/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
 		int pid = waitpid(-1, &status, __WALL);
-		/* printf("pid: %d, status %x, SIGTRAP %x\n", pid, status, SIGTRAP); */
+		/* printf("%d get pid: %d, status %x, SIGTRAP %x\n", getpid(), pid, status, SIGTRAP); */
 		/* retrieve the event header */
 		if(pid == zygote_pid){
 			if (IS_FORK_EVENT(status) || IS_VFORK_EVENT(status) || IS_CLONE_EVENT(status)) {
@@ -75,13 +75,11 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 		} else if (pid > 0){
 			/* ignore signal from child process of current process */
 			if (!WIFEXITED(status)) {
+					ptrace_detach(pid);
 				if(fork() == 0) {
-					/* appfence child detaches zygote and returns the app pid */
-					ptrace_detach(zygote_pid);
-					/* ptrace_attach(pid); */
 					return pid;
 				} else {
-					ptrace_detach(pid);
+					continue;
 				}
 			}
 		} else {

@@ -13,14 +13,10 @@
 #include "sandbox_helper.h"
 #include "ptraceaux.h"
 
-#define DATA_DATA "/data/data"
-#define SDCARD "/sdcard"
-#define MNT_SDCARD "/mnt/sdcard"
+#define SANDBOX_PATH "/data/data /sdcard /mnt/sdcard /storage/sdcard"
 
 #define SANDBOX_PREFIX "/data/sandbox"
 
-// check if target is begin with sub
-int check_begin_substr(char* sub, char* target);
 // check if path is begin with DATA_DATA SDCARD or MNT_SDCARD
 int is_data_path(char* path);
 // create folder base on dir
@@ -88,31 +84,24 @@ pid_t ptrace_app_process(pid_t pid, int sandbox)
 	return -1;
 }
 
-int check_begin_substr(char* sub, char* target)
-{
-	char* c = sub;
-	int i = 0;
-	for(; *c != 0; c++,i++){
-		if(target[i] != *c) return 0;
-	}
-	return 1;
-}
-
 int is_data_path(char* path)
 {
-	char* dd = DATA_DATA;
-	char* sdcard = SDCARD;
-	char* mnt = MNT_SDCARD;
-
-	if (check_begin_substr(dd, path)){
-		return 1;
-	} else if (check_begin_substr(sdcard, path)) {
-		return 1;
-	} else if (check_begin_substr(mnt, path)) {
-		return 1;
-	} else {
-		return 0;
+	char* sandbox_path = SANDBOX_PATH;
+	char* c = sandbox_path;
+	int i = 0;
+	int result = 1;
+	for(; *c != 0; c++,i++){
+		if (result && *c == ' ') {
+			return 1;
+		}
+		else if (*c == ' ' ) {
+			i = -1;
+			result = 1;
+		} else if (*c != path[i]) {
+			result = 0;
+		}
 	}
+	return result;
 }
 
 void createPath(char* dir)

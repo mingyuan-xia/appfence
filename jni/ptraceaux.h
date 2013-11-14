@@ -38,10 +38,4 @@ void init_ptrace_tool(int arch);
  */
 extern void ptrace_setopt(pid_t pid, int opt);
 
-/**
- *  Handle SIGSTOP from child process forked by zygote
- */
-extern int handle_syscall(pid_t pid);
-
-
 #endif /* PTRACEAUX_H_ */
