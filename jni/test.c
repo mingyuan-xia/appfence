@@ -3,6 +3,7 @@
  * For unit test
  */
 
+#include "config.h"
 #include "zygote_helper.h"
 #include "ptraceaux.h"
 #include "sandbox_helper.h"
@@ -11,8 +12,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-
-#define SANDBOX_OPTION 1
 
 int main(int argc, char *argv[])
 {
@@ -25,11 +24,11 @@ int main(int argc, char *argv[])
 			/* wait until zygote sends a signal */
 			/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
 			int pid = waitpid(-1, &status, __WALL);
-			printf("test:pid=%d, status %x\n", pid, status);
+			printf("app pid=%d, status %x\n", pid, status);
 			ptrace(PTRACE_CONT, pid, NULL, NULL);
 			ptrace_detach(pid);
 		}
-		// ptrace_app_process(pid, SANDBOX_OPTION);
+		// ptrace_app_process(pid, SANDBOX_ENABLED);
 	}
 	return 0;
 }

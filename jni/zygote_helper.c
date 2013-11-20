@@ -47,6 +47,10 @@ pid_t zygote_find_process(void)
 
 pid_t ptrace_zygote(pid_t zygote_pid)
 {
+	/**
+	 * Zygote's behaivor is well understood. It calls fork() to make a new app process.
+	 * The child app process then triggers the DalvikVM loading, etc.
+	 */
 	int status, ev;
 
 	/* keep an eye on zygote */
@@ -54,37 +58,34 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 		printf("Error: ptrace zygote failed\n");
 		return -1;
 	}
-	/* note that we set O_TRACEFORK to automatically ptrace the child forked by zygote */
-	ptrace_setopt(zygote_pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
+
+	/* use this option to automatically attach to the child forked by zygote */
+	ptrace_setopt(zygote_pid, PTRACE_O_TRACEFORK);
 
 	while (1) {
-		/* wait until zygote sends a signal */
-		/* assert(zygote_pid == waitpid(zygote_pid, &status, __WALL)); */
-		int pid = waitpid(-1, &status, __WALL);
-		printf("pid: %d, status %x\n", pid, status);
-		/* retrieve the event header */
-		if(pid == zygote_pid){
-			if (IS_FORK_EVENT(status) || IS_VFORK_EVENT(status) || IS_CLONE_EVENT(status)) {
-				printf("ev from %d\n", zygote_pid);
-				pid_t newpid;
-				/* get the forked child pid from the msg */
-				ptrace(PTRACE_GETEVENTMSG, zygote_pid, NULL, &newpid);
-				/* the child is already ptraced since we have PTRACE_O_TRACEFORK */
-				printf("zygote forks %d\n", newpid);
-				/* let zygote continue and go*/
-				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				ptrace_detach(zygote_pid);
-				return newpid;
-			}
-			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		} else if (pid > 0){
-			/* appfence detaches zygote and returns the app pid */
-			printf("app process sneaks in\n");
-			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		} else {
-			printf("Error: unexpected events\n");
-			break;
+		/* wait until zygote is trapped by a ptrace stop */
+		int pid = waitpid(zygote_pid, &status, __WALL);
+		/* check if waitpid fails */
+		if (pid == -1) {
+			ptrace_detach(zygote_pid);
+			printf("Error: ptrace zygote waitpid failed\n");
+			return -1;
 		}
+		assert(zygote_pid == pid);
+		printf("pid: %d, status %x\n", pid, status);
+		/* check if the fork() event happens */
+		if (IS_FORK_EVENT(status)) {
+			pid_t newpid;
+			/* get the forked child pid from the msg */
+			ptrace(PTRACE_GETEVENTMSG, zygote_pid, NULL, &newpid);
+			/* the child is already ptraced since we have PTRACE_O_TRACEFORK */
+			printf("zygote forks %d\n", newpid);
+			/* let zygote continue and go */
+			ptrace_detach(zygote_pid);
+			return newpid;
+		}
+		/* if zygote pauses of no reason, let it continue */
+		ptrace(PTRACE_CONT, pid, NULL, NULL);
 	}
 	return -1;
 }
