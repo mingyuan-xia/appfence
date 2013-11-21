@@ -33,6 +33,7 @@ pid_t ptrace_app_process(pid_t pid, int sandbox)
 	*/
 	printf("%d tracing process %d\n", getpid(), pid);
 
+	// TODO why do we need to set syscall tracing too?
 	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
 
 	int status;
@@ -40,10 +41,14 @@ pid_t ptrace_app_process(pid_t pid, int sandbox)
 	while(pid > 0){
 		//syscall enter
 		long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
+		// TODO I think we need refactoring, here, abstract out the logic that handles individual system call
+		// from the big looping "dispatcher"
 		if (syscall_no == __NR_open) {
 			//arg1 is oflag
 			long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
 			//TODO: determine which file need to keep isolation
+			// ken: I don't understand, we have is_data_path, is this TODO fixed?
+			// ken: as long as it is an open(), we can make meaningful for arg0 arg1, right?
 			long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
 			
 			char* sandbox_prefix = SANDBOX_PREFIX;
@@ -55,6 +60,7 @@ pid_t ptrace_app_process(pid_t pid, int sandbox)
 			ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1 + prefix_len);
 			printf("pid %d open: %s\n",pid, path);
 			if(sandbox && is_data_path(path)){
+				// TODO path shortening
 				// change to new path
 				char new_path[len + 1 + prefix_len];
 				strcpy(new_path, sandbox_prefix);
