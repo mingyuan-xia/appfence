@@ -1,12 +1,12 @@
-appfence
+Appfence
 ========
 Appfence is an android *sandbox* that provides both traditional file/network isolation as well as Android-specific sandboxing. Appfence provides two major functionalities:
-* redirect files that accessed by the sandboxed app. Thus the sandboxed app cannot access files belonging to the same app in normal mode.
-* Android API sandboxing, which is under investigation
+* redirect files accessed by the sandboxed app. Thus the sandboxed app cannot access files belonging to the same app in normal mode.
+* Android API sandboxing, which is under investigation.
 
-Note: Appfence operates on system call level (ptrace-based)
+Note: Appfence operates on system call level (ptrace-based).
 
-## Getting start
+## Getting started
 
 ### Eclipse + CDT + Android NDK + Android SDK
 The project is mainly using `Android NDK` toolchain (compilers, scripts, debuggers) for development. Also `Android SDK` is needed if the actual device is needed for development.
