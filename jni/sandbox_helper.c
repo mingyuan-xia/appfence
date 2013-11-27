@@ -10,21 +10,19 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "config.h"
 #include "sandbox_helper.h"
+#include "file_toolkit.h"
 #include "ptraceaux.h"
-
-#define SANDBOX_PATH "/data/data /sdcard /mnt/sdcard /storage/sdcard"
-
-#define SANDBOX_PREFIX "/data/sandbox"
-
-// check if path is begin with DATA_DATA SDCARD or MNT_SDCARD
-int is_data_path(char* path);
-// create folder base on dir
-void createPath(char* dir);
 
 #define IS_WRITE(oflag) ((oflag & O_WRONLY) != 0 || (oflag & O_RDWR) != 0)
 
-pid_t ptrace_app_process(pid_t pid, int sandbox)
+//open syscall handler
+pid_t syscall_open_handler(pid_t pid, int flag);
+//default syscall handler
+pid_t syscall_default_handler(pid_t pid, int flag);
+
+pid_t ptrace_app_process(pid_t pid, int flag)
 {
 	/*
 	if (ptrace_attach(pid)) {
@@ -34,101 +32,73 @@ pid_t ptrace_app_process(pid_t pid, int sandbox)
 	printf("%d tracing process %d\n", getpid(), pid);
 
 	// TODO why do we need to set syscall tracing too?
+	// What if the app also fork an thread? even never meet this situation
 	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
 
-	int status;
 
 	while(pid > 0){
 		//syscall enter
 		long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
-		// TODO I think we need refactoring, here, abstract out the logic that handles individual system call
-		// from the big looping "dispatcher"
-		if (syscall_no == __NR_open) {
-			//arg1 is oflag
-			long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
-			//TODO: determine which file need to keep isolation
-			// ken: I don't understand, we have is_data_path, is this TODO fixed?
-			// ken: as long as it is an open(), we can make meaningful for arg0 arg1, right?
-			long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
-			
-			char* sandbox_prefix = SANDBOX_PREFIX;
-			int prefix_len = strlen(sandbox_prefix);
-
-			int len = ptrace_strlen(pid, (void*) arg0);
-			char path[len + 1 + prefix_len];
-			//first arg of open is path addr
-			ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1 + prefix_len);
-			printf("pid %d open: %s\n",pid, path);
-			if(sandbox && is_data_path(path)){
-				// TODO path shortening
-				// change to new path
-				char new_path[len + 1 + prefix_len];
-				strcpy(new_path, sandbox_prefix);
-				strcat(new_path, path);
-				ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1 + prefix_len);
-				// create require folder
-				createPath(new_path);
-				printf("pid %d new path: %s\n",pid, new_path);
-
-				// return from open syscall, reset the path
-				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				pid = waitpid(pid, &status, __WALL);
-
-				ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1 + prefix_len);
-
-				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				pid = waitpid(pid, &status, __WALL);
-				continue;
-			}
+		switch(syscall_no) {
+			case __NR_open:
+				pid = syscall_open_handler(pid, flag);
+				break;
+			default:
+				pid = syscall_default_handler(pid, flag);
+				break;
 		}
-		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(pid, &status, __WALL);
-		//syscall return
-		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(pid, &status, __WALL);
 	}
 	ptrace_detach(pid);
 	printf("%d exit\n", pid);
 	return -1;
 }
 
-int is_data_path(char* path)
-{
-	char* sandbox_path = SANDBOX_PATH;
-	char* c = sandbox_path;
-	int i = 0;
-	int result = 1;
-	for(; *c != 0; c++,i++){
-		if (result && *c == ' ') {
-			return 1;
-		}
-		else if (*c == ' ' ) {
-			i = -1;
-			result = 1;
-		} else if (*c != path[i]) {
-			result = 0;
-		}
+pid_t syscall_open_handler(pid_t pid, int flag) {
+	int status;
+	//arg1 is oflag
+	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
+	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+
+	int len = ptrace_strlen(pid, (void*) arg0);
+	char path[len + 1];
+	//first arg of open is path addr
+	ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1);
+	if((flag & SANDBOX_FLAG) && check_prefix(path,SANDBOX_PATH)){
+		char new_path[len + 1];
+		//replace dir in path with LINK_PREFIX
+		char* second_dir = get_nth_dir(path, 2);
+		//check if need to replace upper level
+		if(check_prefix(second_dir,SECOND_DIR))
+			second_dir = get_nth_dir(path, 3);
+		strcpy(new_path, SANDBOX_LINK);
+		strcat(new_path, second_dir);
+		ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1);
+		// create require folder
+		create_path(new_path);
+		printf("pid %d open: %s\n ==> new path: %s\n",pid,path, new_path);
+
+		// return from open syscall, reset the path
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
+
+		ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
+
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
+		return pid;
+	} else {
+		printf("pid %d open: %s\n",pid, path);
+		return syscall_default_handler(pid, flag);
 	}
-	return result;
+
 }
 
-void createPath(char* dir)
-{
-	int	i,len;
-	char str[512];
-	strcpy(str, dir);
-	len = strlen(str);
-	for (i=0; i<len; i++)
-	{
-		if (str[i] == '/')
-		{
-			str[i] = '\0';
-			if (access(str, F_OK) != 0)
-			{
-				mkdir(str, 0777);
-			}
-			str[i] = '/';
-		}
-	}
-	return;
+pid_t syscall_default_handler(pid_t pid, int flag) {
+	int status;
+	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+	pid = waitpid(pid, &status, __WALL);
+	//syscall return
+	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+	pid = waitpid(pid, &status, __WALL);
+	return pid;
 }
