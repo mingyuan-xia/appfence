@@ -14,11 +14,17 @@
 #include "sandbox_helper.h"
 #include "file_toolkit.h"
 #include "ptraceaux.h"
+#include "binder_helper.h"
 
 #define IS_WRITE(oflag) ((oflag & O_WRONLY) != 0 || (oflag & O_RDWR) != 0)
+#define DEV_BINDER "/dev/binder"
 
 //open syscall handler
-pid_t syscall_open_handler(pid_t pid, int flag);
+pid_t syscall_open_handler(pid_t pid, int *binder_pid, int flag);
+
+//ioctl syscall handler
+pid_t syscall_ioctl_handler(pid_t pid, pid_t binder_pid, int flag);
+
 //default syscall handler
 pid_t syscall_default_handler(pid_t pid, int flag);
 
@@ -35,13 +41,18 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	// What if the app also fork an thread? even never meet this situation
 	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
 
+	int binder_fd = 0;
+
 
 	while(pid > 0){
 		//syscall enter
 		long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
 		switch(syscall_no) {
 			case __NR_open:
-				pid = syscall_open_handler(pid, flag);
+				pid = syscall_open_handler(pid, &binder_fd, flag);
+				break;
+			case __NR_ioctl:
+				pid = syscall_ioctl_handler(pid, binder_fd, flag);
 				break;
 			default:
 				pid = syscall_default_handler(pid, flag);
@@ -53,7 +64,8 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	return -1;
 }
 
-pid_t syscall_open_handler(pid_t pid, int flag) {
+pid_t syscall_open_handler(pid_t pid, int *binder_fd, int flag)
+{
 	int status;
 	//arg1 is oflag
 	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
@@ -63,6 +75,7 @@ pid_t syscall_open_handler(pid_t pid, int flag) {
 	char path[len + 1];
 	//first arg of open is path addr
 	ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1);
+
 	if((flag & SANDBOX_FLAG) && check_prefix(path,SANDBOX_PATH)){
 		char new_path[len + 1];
 		//replace dir in path with LINK_PREFIX
@@ -86,6 +99,19 @@ pid_t syscall_open_handler(pid_t pid, int flag) {
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(pid, &status, __WALL);
 		return pid;
+	} else if(strcmp(path, DEV_BINDER) == 0) {
+		// return from open syscall, read the result fd
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
+
+		// reg0 will be the result of open
+		*binder_fd = (int) ptrace_tool.ptrace_get_syscall_arg(pid , 0);
+		printf("pid %d open binder: %d\n", pid, *binder_fd);
+
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
+		return pid;
+		
 	} else {
 		printf("pid %d open: %s\n",pid, path);
 		return syscall_default_handler(pid, flag);
@@ -93,7 +119,25 @@ pid_t syscall_open_handler(pid_t pid, int flag) {
 
 }
 
-pid_t syscall_default_handler(pid_t pid, int flag) {
+pid_t syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
+{
+	if(binder_fd == 0) {
+		return syscall_default_handler(pid, flag);
+	}
+
+	int status;
+
+	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+
+	if((int)arg0 == binder_fd) {
+		printf("get ioctl of binder %d.\n", (int)arg0);
+	}
+
+	return syscall_default_handler(pid, flag);
+}
+
+pid_t syscall_default_handler(pid_t pid, int flag)
+{
 	int status;
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	pid = waitpid(pid, &status, __WALL);
