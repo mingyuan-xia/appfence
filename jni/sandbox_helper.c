@@ -41,7 +41,7 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	// What if the app also fork an thread? even never meet this situation
 	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
 
-	int binder_fd = 0;
+	int binder_fd = -1;
 
 
 	while(pid > 0){
@@ -121,16 +121,16 @@ pid_t syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 
 pid_t syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 {
-	if(binder_fd == 0) {
+	if(binder_fd < 0) {
 		return syscall_default_handler(pid, flag);
 	}
 
 	int status;
-
+	// arg0 will be the file description
 	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
 
 	if((int)arg0 == binder_fd) {
-		printf("get ioctl of binder %d.\n", (int)arg0);
+		binder_ioctl_handler(pid);
 	}
 
 	return syscall_default_handler(pid, flag);
