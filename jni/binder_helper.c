@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <linux/binder.h>
+#include <string.h>
 #include "binder_helper.h"
 #include "ptraceaux.h"
 
@@ -69,9 +70,25 @@ void binder_write_read_handler(pid_t pid)
 						struct binder_transaction_data data;
 						ptrace_tool.ptrace_read_data(pid, &data, (void *)cur, sizeof(struct binder_transaction_data));
 						cur += sizeof(struct binder_transaction_data);
-						if(data.target.handle == 0x0){
+						if(!data.target.handle && data.code == GET_SERVICE_TRANSACTION){
 							// the request to service manager
-							printf("get transaction to service manager\n");
+							int len;
+
+							// include/binder/parcel.cpp
+							unsigned long ptr = (unsigned long)data.data.ptr.buffer + 10 + (strlen(ISERVICE_MANAGER) + 1) * 2;
+							int i;
+							// get len
+							ptrace_tool.ptrace_read_data(pid, &len, (void *)ptr, sizeof(int));
+							char16_t service_name[len + 1];
+
+							// get service name
+							ptrace_tool.ptrace_read_data(pid, service_name, (void *)ptr + 4, sizeof(char16_t) * (len + 1));
+							printf("service name: ");
+							printf("%d ---- ", len);
+							for(i = 0; i < len ; i++) {
+								printf("%c",(char)service_name[i]);
+							}
+							printf("\n");
 						}
 					}
 					break;
