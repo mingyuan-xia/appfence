@@ -70,26 +70,40 @@ void binder_write_read_handler(pid_t pid)
 						struct binder_transaction_data data;
 						ptrace_tool.ptrace_read_data(pid, &data, (void *)cur, sizeof(struct binder_transaction_data));
 						cur += sizeof(struct binder_transaction_data);
-						if(!data.target.handle && data.code == GET_SERVICE_TRANSACTION){
-							// the request to service manager
-							int len;
+						/* if(data.code == GET_SERVICE_TRANSACTION){ */
+						int i;
 
-							// include/binder/parcel.cpp
-							unsigned long ptr = (unsigned long)data.data.ptr.buffer + 10 + (strlen(ISERVICE_MANAGER) + 1) * 2;
-							int i;
-							// get len
-							ptrace_tool.ptrace_read_data(pid, &len, (void *)ptr, sizeof(int));
-							char16_t service_name[len + 1];
+						unsigned long ptr = (unsigned long)data.data.ptr.buffer + 4;
 
-							// get service name
-							ptrace_tool.ptrace_read_data(pid, service_name, (void *)ptr + 4, sizeof(char16_t) * (len + 1));
-							printf("service name: ");
-							printf("%d ---- ", len);
-							for(i = 0; i < len ; i++) {
-								printf("%c",(char)service_name[i]);
-							}
-							printf("\n");
+						// the request to service manager
+						long len;
+
+						// include/binder/parcel.cpp
+						ptrace_tool.ptrace_read_data(pid, &len, (void *)ptr, sizeof(long));
+						char16_t service[len + 1];
+						ptrace_tool.ptrace_read_data(pid, service, (void *)ptr + sizeof(long), sizeof(char16_t) * (len + 1));
+						ptr +=(sizeof(long) + 2 + (len + 1) * sizeof(char16_t));
+						printf("service name: %ld ---", len);
+						for(i = 0; i < len; i++) {
+							printf("%c",(char)service[i]);
 						}
+						printf("\n");
+
+						// TODO: identify service base on service name and handler different service separately
+
+							/* printf("service name: "); */
+							/* ptrace_tool.ptrace_read_data(pid, &len, (void *)ptr, sizeof(int)); */
+							/* printf("%d ---- ", len); */
+							/* char16_t service_name[len + 1]; */
+							
+							
+							/* // get service name */
+							/* ptrace_tool.ptrace_read_data(pid, service_name, (void *)ptr + 4, sizeof(char16_t) * (len + 1)); */
+							/* for(i = 0; i < len ; i++) { */
+							/* 	printf("%c",(char)service_name[i]); */
+							/* } */
+							/* printf("\n"); */
+						/* } */
 					}
 					break;
 				default:
