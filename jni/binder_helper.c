@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <linux/binder.h>
 #include <string.h>
+#include "uchar.h"
 #include "binder_helper.h"
 #include "ptraceaux.h"
 
@@ -91,6 +92,29 @@ void binder_write_read_handler(pid_t pid)
 
 						// TODO: identify service base on service name and handler different service separately
 
+						if(strcmp12(service, ICONTENT_PROVIDER) == 0){
+							char all_data[data.data_size];
+							ptrace_tool.ptrace_read_data(pid, all_data, (void *)data.data.ptr.buffer, data.data_size);
+							int com = 0;
+							for(i = 0; i < data.data_size; i++){
+								printf("%c|", all_data[i]);
+								if(all_data[i] == 'c' && all_data[i+2] == 'o' && all_data[i+4] == 'm' && all_data[i+6] == '.'){
+									com = i;
+								}
+							}
+							printf("\n%d\n", com);
+						}else if(strcmp12(service, IACTIVITY_MANAGER) == 0 && data.code == GET_CONTENT_PROVIDER_TRANSACTION) {
+							char all_data[data.data_size];
+							ptrace_tool.ptrace_read_data(pid, all_data, (void *)data.data.ptr.buffer, data.data_size);
+							int com = 0;
+							for(i = 0; i < data.data_size; i++){
+								printf("%c|", all_data[i]);
+								if(all_data[i] == 'c' && all_data[i+2] == 'o' && all_data[i+4] == 'm' && all_data[i+6] == '.'){
+									com = i;
+								}
+							}
+							printf("\n%d\n",com);
+						}
 							/* printf("service name: "); */
 							/* ptrace_tool.ptrace_read_data(pid, &len, (void *)ptr, sizeof(int)); */
 							/* printf("%d ---- ", len); */

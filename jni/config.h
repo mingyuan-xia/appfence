@@ -8,7 +8,7 @@
 
 #define SANDBOX_ENABLED 1
 
-#define SANDBOX_PATH "/data/data /sdcard /mnt/sdcard /storage/sdcard"
+#define SANDBOX_PATH "/data/data /data/user/0 /sdcard /mnt/sdcard /storage/sdcard"
 #define SECOND_DIR "/data /sdcard"
 
 #define SANDBOX_STORAGE_PATH "/data/sandbox/"

@@ -54,6 +54,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 	int status, ev;
 
 	/* keep an eye on zygote */
+        printf("zygote pid:%d\n",zygote_pid);
 	if (ptrace_attach(zygote_pid)) {
 		printf("Error: ptrace zygote failed\n");
 		return -1;
