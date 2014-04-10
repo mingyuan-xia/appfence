@@ -103,12 +103,6 @@ void binder_write_read_handler(pid_t pid)
 									com = i;
 									strchpre12(&all_data[i], SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX);
 								}
-								/* if(all_data[i] == 'c' && all_data[i+2] == 'o' && all_data[i+4] == 'm' && all_data[i+6] == '.'){ */
-								/* 	com = i; */
-								/* 	all_data[i] = 'f'; */
-								/* 	all_data[i+2] = 'a'; */
-								/* 	all_data[i+4] = 'k'; */
-								/* } */
 								printf("%c|", all_data[i]);
 							}
 							printf("\n%d\n", com);
