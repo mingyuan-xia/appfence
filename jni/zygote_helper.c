@@ -57,7 +57,7 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 	}
 
 	/* use this option to automatically attach to the child forked by zygote */
-	ptrace_setopt(zygote_pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE);
+	ptrace_setopt(zygote_pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
 
 	while (1) {
 		/* wait until zygote is trapped by a ptrace stop */

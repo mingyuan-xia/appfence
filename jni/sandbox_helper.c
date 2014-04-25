@@ -37,6 +37,8 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	*/
 	printf("%d tracing process %d\n", getpid(), pid);
 
+	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
+
 	int binder_fd = -1;
 	int status = 0;
 	
@@ -49,11 +51,17 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 		if(IS_FORK_EVENT(status) || IS_CLONE_EVENT(status)){
 			pid_t newpid;
 			ptrace(PTRACE_GETEVENTMSG, pid, NULL, (long) &newpid);
-			ptrace(PTRACE_SYSCALL, newpid, NULL, NULL);
+			/* ptrace(PTRACE_SYSCALL, newpid, NULL, NULL); */
 			printf("new thread %d .\n", newpid);
-			/* ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
-			pid = syscall_default_handler(pid, &status, flag);
-		} else {
+			/* ptrace_detach(newpid); */
+			/* if(fork() == 0){ */
+			/* 	ptrace_attach(newpid); */
+				ptrace_setopt(newpid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
+			/* } else { */
+				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+				/* pid = syscall_default_handler(pid, &status, flag); */
+			/* } */
+		} else if(IS_SYSCALL_EVENT(status)){
 			//syscall enter
 			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
 			switch(syscall_no) {
@@ -64,15 +72,17 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 				/* 	pid = syscall_ioctl_handler(pid, binder_fd, flag); */
 				/* 	break; */
 				default:
-					pid = syscall_default_handler(pid, &status, flag);
+					ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 					break;
 			}
 
+		} else {
+			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		}
 		pid = waitpid(-1, &status, __WALL);
 	}
 	ptrace_detach(pid);
-	printf("%d exit\n", pid);
+	printf("%d exit\n", getpid());
 	return -1;
 }
 
@@ -88,46 +98,46 @@ pid_t syscall_open_handler(pid_t pid, int* status, int *binder_fd, int flag)
 	//first arg of open is path addr
 	ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1);
 
-	/* if((flag & SANDBOX_FLAG) && check_prefix(path,SANDBOX_PATH)){ */
-	/* 	char new_path[len + 1]; */
-	/* 	//replace dir in path with LINK_PREFIX */
-	/* 	char* second_dir = get_nth_dir(path, 2); */
-	/* 	//check if need to replace upper level */
-	/* 	if(check_prefix(second_dir,SECOND_DIR)) */
-	/* 		second_dir = get_nth_dir(path, 3); */
-	/* 	strcpy(new_path, SANDBOX_LINK); */
-	/* 	strcat(new_path, second_dir); */
-	/* 	ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1); */
-	/* 	// create require folder */
-	/* 	create_path(new_path); */
-	/* 	printf("pid %d open: %s\n ==> new path: %s\n",pid,path, new_path); */
+	if((flag & SANDBOX_FLAG) && check_prefix(path,SANDBOX_PATH)){
+		char new_path[len + 1];
+		//replace dir in path with LINK_PREFIX
+		char* second_dir = get_nth_dir(path, 2);
+		//check if need to replace upper level
+		if(check_prefix(second_dir,SECOND_DIR))
+			second_dir = get_nth_dir(path, 3);
+		strcpy(new_path, SANDBOX_LINK);
+		strcat(new_path, second_dir);
+		ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1);
+		// create require folder
+		create_path(new_path);
+		printf("pid %d open: %s\n ==> new path: %s\n",pid,path, new_path);
 
-	/* 	// return from open syscall, reset the path */
-	/* 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
-	/* 	pid = waitpid(pid, &status, __WALL); */
+		// return from open syscall, reset the path
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
 
-	/* 	ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1); */
+		ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
 
-	/* 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
-	/* 	/1* pid = waitpid(-1, &status, __WALL); *1/ */
-	/* 	return pid; */
-	/* } else if(strcmp(path, DEV_BINDER) == 0) { */
-	/* 	// return from open syscall, read the result fd */
-	/* 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
-	/* 	pid = waitpid(pid, &status, __WALL); */
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		/* pid = waitpid(-1, &status, __WALL); */
+		return pid;
+	} else if(strcmp(path, DEV_BINDER) == 0) {
+		// return from open syscall, read the result fd
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		pid = waitpid(pid, &status, __WALL);
 
-	/* 	// reg0 will be the result of open */
-	/* 	*binder_fd = (int) ptrace_tool.ptrace_get_syscall_arg(pid , 0); */
-	/* 	printf("pid %d open binder: %d\n", pid, *binder_fd); */
+		// reg0 will be the result of open
+		*binder_fd = (int) ptrace_tool.ptrace_get_syscall_arg(pid , 0);
+		printf("pid %d open binder: %d\n", pid, *binder_fd);
 
-	/* 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
-	/* 	/1* pid = waitpid(-1, &status, __WALL); *1/ */
-	/* 	return pid; */
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+		/* pid = waitpid(-1, &status, __WALL); */
+		return pid;
 		
-	/* } else { */
+	} else {
 		printf("pid %d open: %s\n",pid, path);
 		return syscall_default_handler(pid, status, flag);
-	/* } */
+	}
 
 }
 
