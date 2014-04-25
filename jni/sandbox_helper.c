@@ -20,13 +20,13 @@
 #define DEV_BINDER "/dev/binder"
 
 //open syscall handler
-pid_t syscall_open_handler(pid_t pid, int *binder_pid, int flag);
+pid_t syscall_open_handler(pid_t pid, int* status, int *binder_pid, int flag);
 
 //ioctl syscall handler
-pid_t syscall_ioctl_handler(pid_t pid, pid_t binder_pid, int flag);
+pid_t syscall_ioctl_handler(pid_t pid, int* status, pid_t binder_pid, int flag);
 
 //default syscall handler
-pid_t syscall_default_handler(pid_t pid, int flag);
+pid_t syscall_default_handler(pid_t pid, int* status, int flag);
 
 pid_t ptrace_app_process(pid_t pid, int flag)
 {
@@ -38,31 +38,33 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	printf("%d tracing process %d\n", getpid(), pid);
 
 	int binder_fd = -1;
-	int status;
+	int status = 0;
 	
 
-	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-	pid = waitpid(-1, &status, __WALL);
+	/* ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
+	/* pid = waitpid(-1, &status, __WALL); */
+	/* ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
+	/* pid = waitpid(-1, &status, __WALL); */
 	while(pid > 0){
 		if(IS_FORK_EVENT(status) || IS_CLONE_EVENT(status)){
 			pid_t newpid;
 			ptrace(PTRACE_GETEVENTMSG, pid, NULL, (long) &newpid);
-			/* ptrace(PTRACE_SYSCALL, newpid, NULL, NULL); */
+			ptrace(PTRACE_SYSCALL, newpid, NULL, NULL);
 			printf("new thread %d .\n", newpid);
-			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		} else{
+			/* ptrace(PTRACE_SYSCALL, pid, NULL, NULL); */
+			pid = syscall_default_handler(pid, &status, flag);
+		} else {
 			//syscall enter
 			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
-			printf("syscall from %d\n", pid);
 			switch(syscall_no) {
 				case __NR_open:
-					pid = syscall_open_handler(pid, &binder_fd, flag);
+					pid = syscall_open_handler(pid, &status, &binder_fd, flag);
 					break;
 				/* case __NR_ioctl: */
 				/* 	pid = syscall_ioctl_handler(pid, binder_fd, flag); */
 				/* 	break; */
 				default:
-					pid = syscall_default_handler(pid, flag);
+					pid = syscall_default_handler(pid, &status, flag);
 					break;
 			}
 
@@ -74,16 +76,14 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	return -1;
 }
 
-pid_t syscall_open_handler(pid_t pid, int *binder_fd, int flag)
+pid_t syscall_open_handler(pid_t pid, int* status, int *binder_fd, int flag)
 {
-	int status;
 	//arg1 is oflag
 	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
 	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
-	printf("lala\n");
+	printf("syscall from %d\n", pid);
 
 	int len = ptrace_strlen(pid, (void*) arg0);
-	printf("lala\n");
 	char path[len + 1];
 	//first arg of open is path addr
 	ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1);
@@ -126,18 +126,17 @@ pid_t syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 		
 	/* } else { */
 		printf("pid %d open: %s\n",pid, path);
-		return syscall_default_handler(pid, flag);
+		return syscall_default_handler(pid, status, flag);
 	/* } */
 
 }
 
-pid_t syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
+pid_t syscall_ioctl_handler(pid_t pid, int* status, int binder_fd, int flag)
 {
 	if(binder_fd < 0) {
-		return syscall_default_handler(pid, flag);
+		return syscall_default_handler(pid, status, flag);
 	}
 
-	int status;
 	// arg0 will be the file description
 	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
 
@@ -145,14 +144,13 @@ pid_t syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 		binder_ioctl_handler(pid);
 	}
 
-	return syscall_default_handler(pid, flag);
+	return syscall_default_handler(pid, status, flag);
 }
 
-pid_t syscall_default_handler(pid_t pid, int flag)
+pid_t syscall_default_handler(pid_t pid, int* status, int flag)
 {
-	int status;
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-	pid = waitpid(pid, &status, __WALL);
+	pid = waitpid(pid, status, __WALL);
 	//syscall return
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	/* pid = waitpid(-1, &status, __WALL); */
