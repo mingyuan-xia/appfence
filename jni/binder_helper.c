@@ -93,15 +93,15 @@ void binder_write_read_handler(pid_t pid)
 
 						// TODO: identify service base on service name and handler different service separately
 
-						if(strcmp12(service, ICONTENT_PROVIDER) == 0 || (strcmp12(service, IACTIVITY_MANAGER) == 0 && data.code == GET_CONTENT_PROVIDER_TRANSACTION)){
+						/* if(strcmp12(service, ICONTENT_PROVIDER) == 0 || (strcmp12(service, IACTIVITY_MANAGER) == 0 && data.code == GET_CONTENT_PROVIDER_TRANSACTION)){ */
 							char16_t all_data[data.data_size / 2];
 							ptrace_tool.ptrace_read_data(pid, (void *)all_data, (void *)data.data.ptr.buffer, data.data_size);
 							int com = 0;
 							for(i = 0; i < data.data_size; i++){
 								if(strpreg12(&all_data[i], SANDBOX_CONTENT_PROVIDER) == 0) {
-									printf("aaa\n");
+									printf("\n=====================\nbinggo!!!\n===========================\n");
 									com = i;
-									strchpre12(&all_data[i], SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX);
+									/* strchpre12(&all_data[i], SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX); */
 								}
 								printf("%c|", all_data[i]);
 							}
@@ -109,24 +109,7 @@ void binder_write_read_handler(pid_t pid)
 							if(com > 0){
 								ptrace_tool.ptrace_write_data(pid, all_data, (void *)  data.data.ptr.buffer, data.data_size);
 							}
-						/* }else if(strcmp12(service, IACTIVITY_MANAGER) == 0 && data.code == GET_CONTENT_PROVIDER_TRANSACTION) { */
-						/* 	char all_data[data.data_size]; */
-						/* 	ptrace_tool.ptrace_read_data(pid, all_data, (void *)data.data.ptr.buffer, data.data_size); */
-						/* 	int com = 0; */
-						/* 	for(i = 0; i < data.data_size; i++){ */
-						/* 		if(all_data[i] == 'c' && all_data[i+2] == 'o' && all_data[i+4] == 'm' && all_data[i+6] == '.'){ */
-						/* 			com = i; */
-						/* 			all_data[i] = 'f'; */
-						/* 			all_data[i+2] = 'a'; */
-						/* 			all_data[i+4] = 'k'; */
-						/* 		} */
-						/* 		printf("%c|", all_data[i]); */
-						/* 	} */
-						/* 	printf("\n%d\n",com); */
-						/* 	if(com > 0){ */
-						/* 		ptrace_tool.ptrace_write_data(pid, all_data, (void *)  data.data.ptr.buffer, data.data_size); */
-						/* 	} */
-						}
+						/* } */
 							/* printf("service name: "); */
 							/* ptrace_tool.ptrace_read_data(pid, &len, (void *)ptr, sizeof(int)); */
 							/* printf("%d ---- ", len); */

@@ -47,6 +47,7 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 	while(pid > 0){
 		//syscall enter
 		long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
+		/* printf("[pid  %d]\n", pid); */
 		switch(syscall_no) {
 			case __NR_open:
 				pid = syscall_open_handler(pid, &binder_fd, flag);
@@ -92,24 +93,24 @@ pid_t syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 
 		// return from open syscall, reset the path
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(pid, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL);
 
 		ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(pid, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL);
 		return pid;
 	} else if(strcmp(path, DEV_BINDER) == 0) {
 		// return from open syscall, read the result fd
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(pid, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL);
 
 		// reg0 will be the result of open
 		*binder_fd = (int) ptrace_tool.ptrace_get_syscall_arg(pid , 0);
 		printf("pid %d open binder: %d\n", pid, *binder_fd);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		pid = waitpid(pid, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL);
 		return pid;
 		
 	} else {
@@ -140,9 +141,9 @@ pid_t syscall_default_handler(pid_t pid, int flag)
 {
 	int status;
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-	pid = waitpid(pid, &status, __WALL);
+	pid = waitpid(-1, &status, __WALL);
 	//syscall return
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-	pid = waitpid(pid, &status, __WALL);
+	pid = waitpid(-1, &status, __WALL);
 	return pid;
 }

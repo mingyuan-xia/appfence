@@ -40,10 +40,6 @@ pid_t zygote_find_process(void)
 	return pid;
 }
 
-/* from the man page of ptrace */
-#define IS_FORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8)))
-#define IS_VFORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_VFORK<<8)))
-#define IS_CLONE_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_CLONE<<8)))
 
 pid_t ptrace_zygote(pid_t zygote_pid)
 {

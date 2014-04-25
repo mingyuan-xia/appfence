@@ -11,6 +11,11 @@
 #define ARCH_X86 1
 #define ARCH_ARM 2
 
+/* from the man page of ptrace */
+#define IS_FORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8)))
+#define IS_VFORK_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_VFORK<<8)))
+#define IS_CLONE_EVENT(status) (status>>8 == (SIGTRAP | (PTRACE_EVENT_CLONE<<8)))
+
 /**
  * Attach to a running process
  */
