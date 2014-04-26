@@ -6,7 +6,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define SANDBOX_ENABLED 0
+#define SANDBOX_ENABLED 1
 
 #define SANDBOX_PATH "/data/data /data/user/0 /sdcard /mnt/sdcard /storage/sdcard"
 #define SECOND_DIR "/data /sdcard"
