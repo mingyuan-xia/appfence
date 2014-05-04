@@ -80,15 +80,19 @@ pid_t ptrace_zygote(pid_t zygote_pid)
 			printf("zygote forks %d\n", newpid);
 			/* let zygote continue and go */
 			ptrace_detach(zygote_pid);
-			return newpid;
+			if(fork() == 0) {
+				if(ptrace_attach(zygote_pid)) {
+					printf("Error: ptrace zygote failed\n");
+					return -1;
+				}
+				ptrace_setopt(zygote_pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
+				continue;
+			} else {
+				return newpid;
+			}
 			/* ptrace(PTRACE_GETEVENTMSG, pid, NULL, &newpid); */
 			/* printf("%d forks %d\n", pid, newpid); */
 		}
-		/* else if (IS_CLONE_EVENT(status)) { */
-		/* 	pid_t newpid; */
-		/* 	ptrace(PTRACE_GETEVENTMSG, pid, NULL, &newpid); */
-		/* 	printf("%d clones %d\n", pid, newpid); */
-		/* } */
 		/* if zygote pauses of no reason, let it continue */
 		ptrace(PTRACE_CONT, pid, NULL, NULL);
 	}

@@ -53,14 +53,8 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 			ptrace(PTRACE_GETEVENTMSG, pid, NULL,  &newpid);
 			/* ptrace(PTRACE_SYSCALL, newpid, NULL, NULL); */
 			printf("new thread %d .\n", newpid);
-			/* ptrace_detach(newpid); */
-			/* if(fork() == 0){ */
-			/* 	ptrace_attach(newpid); */
-				ptrace_setopt(newpid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
-			/* } else { */
-				ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-				/* pid = syscall_default_handler(pid, &status, flag); */
-			/* } */
+			ptrace_setopt(newpid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
+			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		} else if(IS_SYSCALL_EVENT(status)){
 			//syscall enter
 			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
@@ -116,9 +110,9 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 		pid = waitpid(pid, NULL, __WALL);
 
 		ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
+		printf("pid %d open: %s\n",pid, path);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		/* pid = waitpid(-1, &status, __WALL); */
 	} else if(strcmp(path, DEV_BINDER) == 0) {
 		// return from open syscall, read the result fd
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
@@ -129,7 +123,6 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 		printf("pid %d open binder: %d\n", pid, *binder_fd);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-		/* pid = waitpid(-1, &status, __WALL); */
 		
 	} else {
 		printf("pid %d open: %s\n",pid, path);
@@ -150,7 +143,6 @@ void syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 
 	if((int)arg0 == binder_fd) {
 		binder_ioctl_handler(pid);
-		/* syscall_default_handler(pid, flag); */
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	} else {
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
@@ -163,6 +155,5 @@ void syscall_default_handler(pid_t pid, int flag)
 	pid = waitpid(pid, NULL, __WALL);
 	//syscall return
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-	/* pid = waitpid(-1, &status, __WALL); */
 	pid;
 }
