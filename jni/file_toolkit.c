@@ -17,8 +17,7 @@ int check_prefix(char* path, char* prefix_list)
 	for(; *c != 0; c++,i++){
 		if (result && *c == ' ') {
 			return 1;
-		}
-		else if (*c == ' ' ) {
+		} else if (*c == ' ' ) {
 			i = -1;
 			result = 1;
 		} else if (*c != path[i]) {
@@ -26,6 +25,29 @@ int check_prefix(char* path, char* prefix_list)
 		}
 	}
 	return result;
+}
+
+int check_prefix_dir(char* path, char* prefix_list)
+{
+	char* c = prefix_list;
+	int i = 0;
+	int result = 1;
+	int num = 0;
+	for(; *c != 0; c++,i++){
+		if (result && *c == ' ') {
+			return num;
+		} else if (*c == ' ' ) {
+			i = -1;
+			result = 1;
+			num = 0;
+		} else if (*c != path[i]) {
+			result = 0;
+			num = 0;
+		} else if (result && path[i] == '/') {
+			num++;
+		}
+	}
+	return num;
 }
 
 char* get_nth_dir(char* path, int n)

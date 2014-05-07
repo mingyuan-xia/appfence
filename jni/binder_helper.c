@@ -85,27 +85,31 @@ void binder_write_read_handler(pid_t pid)
 						char16_t service[len + 1];
 						ptrace_tool.ptrace_read_data(pid, service, (void *)ptr + sizeof(long), sizeof(char16_t) * (len + 1));
 						ptr +=(sizeof(long) + 2 + (len + 1) * sizeof(char16_t));
-						printf("service name: %ld ---", len);
-						for(i = 0; i < len; i++) {
-							printf("%c",(char)service[i]);
-						}
-						printf("\n");
+						/* printf("service name: %ld ---", len); */
+						/* for(i = 0; i < len; i++) { */
+						/* 	printf("%c",(char)service[i]); */
+						/* } */
+						/* printf("\n"); */
 
 						// TODO: identify service base on service name and handler different service separately
 
-						if(strcmp12(service, ICONTENT_PROVIDER) == 0 || (strcmp12(service, IACTIVITY_MANAGER) == 0 && data.code == GET_CONTENT_PROVIDER_TRANSACTION)){
+						if(strcmp12(service, ICONTENT_PROVIDER) == 0 || (strcmp12(service, IACTIVITY_MANAGER) == 0)){ //&& data.code == GET_CONTENT_PROVIDER_TRANSACTION)){
 							char16_t all_data[data.data_size / 2];
 							ptrace_tool.ptrace_read_data(pid, (void *)all_data, (void *)data.data.ptr.buffer, data.data_size);
 							int com = 0;
-							for(i = 0; i < data.data_size; i++){
+							for(i = 0; i < data.data_size / 2; i++){
 								if(strpreg12(&all_data[i], SANDBOX_CONTENT_PROVIDER) == 0) {
 									com = i;
 									strchpre12(&all_data[i], SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX);
 								}
 								printf("%c|", all_data[i]);
 							}
-							printf("\n%d\n", com);
+							printf("\n");
 							if(com > 0){
+								/* for(i = 0; i < data.data_size / 2; i++){ */
+								/* 	printf("%c|", all_data[i]); */
+								/* } */
+								/* printf("\n"); */
 								ptrace_tool.ptrace_write_data(pid, all_data, (void *)  data.data.ptr.buffer, data.data_size);
 							}
 						}
@@ -114,13 +118,6 @@ void binder_write_read_handler(pid_t pid)
 							/* printf("%d ---- ", len); */
 							/* char16_t service_name[len + 1]; */
 							
-							
-							/* // get service name */
-							/* ptrace_tool.ptrace_read_data(pid, service_name, (void *)ptr + 4, sizeof(char16_t) * (len + 1)); */
-							/* for(i = 0; i < len ; i++) { */
-							/* 	printf("%c",(char)service_name[i]); */
-							/* } */
-							/* printf("\n"); */
 						/* } */
 					}
 					break;

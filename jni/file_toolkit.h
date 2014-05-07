@@ -9,6 +9,9 @@
 // check if path is begin with string in prefix_list(seperated by space)
 int check_prefix(char* path, char* prefix_list);
 
+// check if path is begin with string in prefix_list(seperated by space),and return number of /
+int check_prefix_dir(char* path, char* prefix_list);
+
 // get the nth '/' in path
 char* get_nth_dir(char* path, int n);
 
