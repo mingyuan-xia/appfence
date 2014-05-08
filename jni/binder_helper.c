@@ -102,7 +102,7 @@ void binder_write_read_handler(pid_t pid)
 									com = i;
 									strchpre12(&all_data[i], SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX);
 								}
-								printf("%c|", all_data[i]);
+								printf("%c", all_data[i]);
 							}
 							printf("\n");
 							if(com > 0){

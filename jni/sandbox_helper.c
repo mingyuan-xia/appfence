@@ -62,18 +62,39 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 			//syscall enter
 			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
 			switch(syscall_no) {
-				case __NR_mkdir:
-					{
-						char syscall[] = "mkdir";
-						syscall_common_handler(pid, syscall, flag);
-						break;
-					}
+				case __NR_stat:
+					syscall_common_handler(pid, "stat", flag);
+					break;
+				case __NR_lstat:
+					syscall_common_handler(pid, "lstat", flag);
+					break;
+				case __NR_chroot:
+					syscall_common_handler(pid, "chroot", flag);
+					break;
+				case __NR_chmod:
+					syscall_common_handler(pid, "chmod", flag);
+					break;
 				case __NR_access:
-					{
-						char syscall[] = "access";
-						syscall_common_handler(pid, syscall, flag);
-						break;
-					}
+					syscall_common_handler(pid, "access", flag);
+					break;
+				case __NR_chown:
+					syscall_common_handler(pid, "chown", flag);
+					break;
+				case __NR_lchown:
+					syscall_common_handler(pid, "lchown", flag);
+					break;
+				case __NR_utimes:
+					syscall_common_handler(pid, "utimes", flag);
+					break;
+				case __NR_chdir:
+					syscall_common_handler(pid, "chdir", flag);
+					break;
+				case __NR_mkdir:
+					syscall_common_handler(pid, "mkdir", flag);
+					break;
+				case __NR_creat:
+					syscall_common_handler(pid, "creat", flag);
+					break;
 				case __NR_open:
 					syscall_open_handler(pid, &binder_fd, flag);
 					break;
