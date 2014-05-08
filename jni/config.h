@@ -20,6 +20,6 @@
 #define SANDBOX_LINK "/data/s"
 
 #define SANDBOX_CONTENT_PROVIDER "com.android.contacts"
-#define SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX "com"
+#define SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX "fak"
 
 #endif /* CONFIG_H_ */

@@ -93,7 +93,7 @@ void binder_write_read_handler(pid_t pid)
 
 						// TODO: identify service base on service name and handler different service separately
 
-						if(strcmp12(service, ICONTENT_PROVIDER) == 0 || (strcmp12(service, IACTIVITY_MANAGER) == 0)){ //&& data.code == GET_CONTENT_PROVIDER_TRANSACTION)){
+						if(CONTENT_SANDBOX_ENABLED && strcmp12(service, ICONTENT_PROVIDER) == 0 || (strcmp12(service, IACTIVITY_MANAGER) == 0)){ //&& data.code == GET_CONTENT_PROVIDER_TRANSACTION)){
 							char16_t all_data[data.data_size / 2];
 							ptrace_tool.ptrace_read_data(pid, (void *)all_data, (void *)data.data.ptr.buffer, data.data_size);
 							int com = 0;
