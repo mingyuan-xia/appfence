@@ -25,7 +25,10 @@ void ptrace_setopt(pid_t pid, int opt)
 	ptrace(PTRACE_SETOPTIONS, pid, NULL, (void *)opt);
 }
 
-
+void ptrace_cont(pid_t pid)
+{
+	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+}
 
 
 #define WORD_SIZE 4

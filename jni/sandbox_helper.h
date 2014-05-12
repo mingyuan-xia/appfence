@@ -10,9 +10,12 @@
 
 #define SANDBOX_FLAG 0x00000001
 
+typedef void *tracee_ptr_t;
+
  /**
   * Ptrace the app process until it forks a new process
   */
  extern pid_t ptrace_app_process(pid_t pid, int flag);
 
 #endif /* PROCESS_HELPER_H_ */
+

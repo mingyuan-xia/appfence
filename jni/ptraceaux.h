@@ -46,4 +46,10 @@ void init_ptrace_tool(int arch);
  */
 extern void ptrace_setopt(pid_t pid, int opt);
 
+/**
+ * Continue the execution of tracee
+ */
+extern void ptrace_cont(pid_t pid);
+
 #endif /* PTRACEAUX_H_ */
+
