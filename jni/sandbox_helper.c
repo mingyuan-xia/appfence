@@ -4,6 +4,7 @@
  */
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
+#include <sys/prctl.h>
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -28,19 +29,26 @@ void syscall_open_handler(pid_t pid, int *binder_pid, int flag);
 //ioctl syscall handler
 void syscall_ioctl_handler(pid_t pid, pid_t binder_pid, int flag);
 
+//prctl syscall handler
+//result:
+//	0 -- do not need to trace this process
+//	1 -- need to trace
+int syscall_prctl_handler(pid_t pid, pid_t target);
+
 //default syscall handler
 void syscall_default_handler(pid_t pid, int flag);
 
-pid_t ptrace_app_process(pid_t pid, int flag)
+pid_t ptrace_app_process(pid_t process_pid, int flag)
 {
 	/*
 	if (ptrace_attach(pid)) {
 		return -1;
 	}
 	*/
-	printf("%d tracing process %d\n", getpid(), pid);
+	pid_t pid = process_pid;
+	printf("%d tracing process %d\n", getpid(), process_pid);
 
-	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
+	ptrace_setopt(process_pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
 
 	int binder_fd = -1;
 	int status = 0;
@@ -62,6 +70,14 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 			//syscall enter
 			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
 			switch(syscall_no) {
+				case __NR_prctl:
+					if (syscall_prctl_handler(pid, process_pid) == 0) {
+						printf("%d exit\n", getpid());
+						return -1;
+					} else {
+						ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+						break;
+					}
 				case __NR_stat:
 					syscall_common_handler(pid, "stat", flag);
 					break;
@@ -111,7 +127,7 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 		}
 		pid = waitpid(-1, &status, __WALL);
 	}
-	ptrace_detach(pid);
+	/* ptrace_detach(pid); */
 	printf("%d exit\n", getpid());
 	return -1;
 }
@@ -181,6 +197,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 {
 	//arg1 is oflag
 	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
+
 	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
 
 	int len = ptrace_strlen(pid, (void*) arg0);
@@ -269,6 +286,24 @@ void syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 	} else {
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	}
+}
+
+int syscall_prctl_handler(pid_t pid, pid_t target)
+{
+	//arg0 will be the option
+	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+	//if arg0 == PR_SET_NAME, arg1 will be the process name
+	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
+	if (pid != target || arg0 != PR_SET_NAME) {
+		return 1;
+	}
+	int len = ptrace_strlen(pid, (void*) arg1);
+	printf("hello\n");
+	char process_name[len + 1];
+
+	ptrace_tool.ptrace_read_data(pid, process_name, (void *)arg1, len + 1);
+	printf("pid %d set process name: %s\n", pid, process_name);
+	return 1;
 }
 
 void syscall_default_handler(pid_t pid, int flag)
