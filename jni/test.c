@@ -22,31 +22,19 @@ int main(int argc, char *argv[])
 	if(create_link(SANDBOX_STORAGE_PATH, SANDBOX_LINK) < 0) {
 		printf("warnning: link existed\n");
 	}
-	printf("%d\n",argc);
-	if(argc == 1) {
+	/* printf("%d\n",argc); */
+	if(fork() == 0) {
 		pid_t pid = ptrace_zygote(zygote_find_process());
 		if(pid > 0) {
 			ptrace_app_process(pid, SANDBOX_ENABLED);
 		}
-		return 0;
 	} else {
-		if(strcmp(argv[1], APP_FLAG) == 0 && argc >= 2) {
-			pid_t pid = atoi(argv[2]);
-			if (ptrace_attach(pid)) {
-				printf("Error: ptrace pid %d failed\n", pid);
-				return -1;
-			}
-			ptrace_app_process(pid, SANDBOX_ENABLED);
-			return 0;
-		} else if(strcmp(argv[1], ZYGOTE_FLAG) == 0) {
-			pid_t pid = ptrace_zygote(zygote_find_process());
-			if(pid > 0) {
-				ptrace_app_process(pid, SANDBOX_ENABLED);
-			}
-			return 0;
+		printf("press [Ctrl - c] to stop sandboxing\n");
+		while(1) {
+			waitpid(-1, NULL, __WALL);
 		}
 	}
-	printf("usage: appfence [%s pid] | [%s]\n", APP_FLAG, ZYGOTE_FLAG);
+	return 0;
 }
 
 void blind_cont(pid_t pid) {

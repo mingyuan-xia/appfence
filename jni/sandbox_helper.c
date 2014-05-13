@@ -4,7 +4,6 @@
  */
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
-#include <sys/prctl.h>
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -307,10 +306,8 @@ int syscall_setuid_gid_handler(pid_t pid, pid_t target, int is_gid)
 	}
 	long uid,gid;
 	int result = 0;
-	printf("pid: %d uid/gid: %ld\n", pid, arg0);
 	while(!feof(filter_file)){
 		fscanf(filter_file, "%ld %ld", &uid, &gid);
-		printf("uid: %ld, gid: %ld\n", uid, gid);
 		if(is_gid && gid == arg0){
 			result = 1;
 			break;
