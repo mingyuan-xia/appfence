@@ -4,6 +4,7 @@
  */
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
+#include <sys/prctl.h>
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -28,19 +29,26 @@ void syscall_open_handler(pid_t pid, int *binder_pid, int flag);
 //ioctl syscall handler
 void syscall_ioctl_handler(pid_t pid, pid_t binder_pid, int flag);
 
-//default syscall handler
-void syscall_default_handler(pid_t pid, int flag);
+//setuid/gid syscall handler
+//result:
+//	0 -- do not need to trace this process
+//	1 -- need to trace
+int syscall_setuid_gid_handler(pid_t pid, pid_t target, int is_gid);
 
-pid_t ptrace_app_process(pid_t pid, int flag)
+//default syscall handler
+void syscall_default_handler(pid_t pid);
+
+pid_t ptrace_app_process(pid_t process_pid, int flag)
 {
 	/*
 	if (ptrace_attach(pid)) {
 		return -1;
 	}
 	*/
-	printf("%d tracing process %d\n", getpid(), pid);
+	pid_t pid = process_pid;
+	printf("%d tracing process %d\n", getpid(), process_pid);
 
-	ptrace_setopt(pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
+	ptrace_setopt(process_pid, PTRACE_O_TRACEFORK | PTRACE_O_TRACECLONE | PTRACE_O_TRACESYSGOOD);
 
 	int binder_fd = -1;
 	int status = 0;
@@ -62,6 +70,20 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 			//syscall enter
 			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
 			switch(syscall_no) {
+				case __NR_setuid32:
+					if (syscall_setuid_gid_handler(pid, process_pid, 0) == 0) {
+						printf("%d exit\n", getpid());
+						return -1;
+					} else {
+						break;
+					}
+				case __NR_setgid32:
+					if (syscall_setuid_gid_handler(pid, process_pid, 1) == 0) {
+						printf("%d exit\n", getpid());
+						return -1;
+					} else {
+						break;
+					}
 				case __NR_stat:
 					syscall_common_handler(pid, "stat", flag);
 					break;
@@ -111,7 +133,7 @@ pid_t ptrace_app_process(pid_t pid, int flag)
 		}
 		pid = waitpid(-1, &status, __WALL);
 	}
-	ptrace_detach(pid);
+	/* ptrace_detach(pid); */
 	printf("%d exit\n", getpid());
 	return -1;
 }
@@ -173,7 +195,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 	}
 	//default
 	printf("pid %d %s: %s\n", pid, syscall, path);
-	syscall_default_handler(pid, flag);
+	syscall_default_handler(pid);
 }
 
 
@@ -181,6 +203,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 {
 	//arg1 is oflag
 	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
+
 	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
 
 	int len = ptrace_strlen(pid, (void*) arg0);
@@ -248,7 +271,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 	}
 	//default
 	printf("pid %d open: %s\n",pid, path);
-	syscall_default_handler(pid, flag);
+	syscall_default_handler(pid);
 
 }
 
@@ -271,11 +294,41 @@ void syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 	}
 }
 
-void syscall_default_handler(pid_t pid, int flag)
+int syscall_setuid_gid_handler(pid_t pid, pid_t target, int is_gid)
+{
+	if(!PROCESS_FILTER_ENABLED || pid != target)
+		return 1;
+	//arg0 will be the uid/gid
+	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+	FILE *filter_file;
+	if((filter_file = fopen(PROCESS_FILTER_PATH,"r")) == NULL){
+		printf("Error: failed to open process filter file");
+		return 1;
+	}
+	long uid,gid;
+	int result = 0;
+	printf("pid: %d uid/gid: %ld\n", pid, arg0);
+	while(!feof(filter_file)){
+		fscanf(filter_file, "%ld %ld", &uid, &gid);
+		printf("uid: %ld, gid: %ld\n", uid, gid);
+		if(is_gid && gid == arg0){
+			result = 1;
+			break;
+		} else if(!is_gid && uid == arg0){
+			result = 1;
+			break;
+		}
+	}
+	fclose(filter_file);
+	syscall_default_handler(pid);
+
+	return result;
+}
+
+void syscall_default_handler(pid_t pid)
 {
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 	pid = waitpid(pid, NULL, __WALL);
 	//syscall return
 	ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-	pid;
 }
