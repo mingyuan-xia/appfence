@@ -67,7 +67,7 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		} else if(IS_SYSCALL_EVENT(status)){
 			//syscall enter
-			long syscall_no =  ptrace_tool.ptrace_get_syscall_nr(pid);
+			long syscall_no =  ptrace_get_syscall_nr(pid);
 			switch(syscall_no) {
 				case __NR_setuid32:
 					if (syscall_setuid_gid_handler(pid, process_pid, 0) == 0) {
@@ -137,14 +137,18 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
 	return -1;
 }
 
+
+/**
+ * Handle syscalls that take a path as the first parameter
+ */
 void syscall_common_handler(pid_t pid, char* syscall, int flag)
 {
-	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+	tracee_ptr_t arg0 = (tracee_ptr_t) ptrace_get_syscall_arg(pid, 0);
 
-	int len = ptrace_strlen(pid, (void*) arg0);
+	int len = ptrace_strlen(pid, arg0);
 	char path[len + 1];
 	//first arg of open is path addr
-	ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1);
+	ptrace_read_data(pid, path, arg0, len + 1);
 
 	int nth_dir;
 
@@ -157,7 +161,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 			char* second_dir = get_nth_dir(path, nth_dir + 1);
 			strcpy(new_path, SANDBOX_LINK);
 			strcat(new_path, second_dir);
-			ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1);
+			ptrace_write_data(pid, new_path, arg0, len + 1);
 			// create require folder
 			create_path(new_path);
 			printf("pid %d %s: %s\n ==> new path: %s\n", pid, syscall, path, new_path);
@@ -166,7 +170,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 			pid = waitpid(pid, NULL, __WALL);
 
-			ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
+			ptrace_write_data(pid, path, arg0, len + 1);
 
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 			return;
@@ -178,7 +182,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 		char* second_dir = get_nth_dir(path, nth_dir + 1);
 		strcpy(new_path, SANDBOX_LINK);
 		strcat(new_path, second_dir);
-		ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1);
+		ptrace_write_data(pid, new_path, arg0, len + 1);
 		// create require folder
 		/* create_path(new_path); */
 		printf("pid %d %s: %s\n ==> new path: %s\n", pid, syscall, path, new_path);
@@ -187,7 +191,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(pid, NULL, __WALL);
 
-		ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
+		ptrace_write_data(pid, path, arg0, len + 1);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		return;
@@ -200,15 +204,14 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 
 void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 {
+	tracee_ptr_t arg0 = ptrace_get_syscall_arg(pid, 0);
 	//arg1 is oflag
-	long arg1 = ptrace_tool.ptrace_get_syscall_arg(pid, 1);
+	long arg1 = ptrace_get_syscall_arg(pid, 1);
 
-	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
-
-	int len = ptrace_strlen(pid, (void*) arg0);
+	int len = ptrace_strlen(pid, arg0);
 	char path[len + 1];
 	//first arg of open is path addr
-	ptrace_tool.ptrace_read_data(pid, path, (void *)arg0, len + 1);
+	ptrace_read_data(pid, path, arg0, len + 1);
 
 	int nth_dir;
 
@@ -221,7 +224,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 			char* second_dir = get_nth_dir(path, nth_dir + 1);
 			strcpy(new_path, SANDBOX_LINK);
 			strcat(new_path, second_dir);
-			ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1);
+			ptrace_write_data(pid, new_path, arg0, len + 1);
 			// create require folder
 			create_path(new_path);
 			printf("pid %d open: %s\n ==> new path: %s\n",pid,path, new_path);
@@ -230,7 +233,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 			pid = waitpid(pid, NULL, __WALL);
 
-			ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
+			ptrace_write_data(pid, path, arg0, len + 1);
 
 			ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 			return;
@@ -242,7 +245,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 		char* second_dir = get_nth_dir(path, nth_dir + 1);
 		strcpy(new_path, SANDBOX_LINK);
 		strcat(new_path, second_dir);
-		ptrace_tool.ptrace_write_data(pid, new_path, (void*)arg0, len + 1);
+		ptrace_write_data(pid, new_path, arg0, len + 1);
 		// create require folder
 		/* create_path(new_path); */
 		printf("pid %d open: %s\n ==> new path: %s\n",pid,path, new_path);
@@ -251,7 +254,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		pid = waitpid(pid, NULL, __WALL);
 
-		ptrace_tool.ptrace_write_data(pid, path, (void*)arg0, len + 1);
+		ptrace_write_data(pid, path, arg0, len + 1);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 		return;
@@ -261,7 +264,7 @@ void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 		pid = waitpid(pid, NULL, __WALL);
 
 		// reg0 will be the result of open
-		*binder_fd = (int) ptrace_tool.ptrace_get_syscall_arg(pid , 0);
+		*binder_fd = (int) ptrace_get_syscall_arg(pid , 0);
 		printf("pid %d open binder: %d\n", pid, *binder_fd);
 
 		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
@@ -283,7 +286,7 @@ void syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 	}
 
 	// arg0 will be the file description
-	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+	long arg0 = ptrace_get_syscall_arg(pid, 0);
 
 	if((int)arg0 == binder_fd) {
 		binder_ioctl_handler(pid);
@@ -298,7 +301,7 @@ int syscall_setuid_gid_handler(pid_t pid, pid_t target, int is_gid)
 	if(!PROCESS_FILTER_ENABLED || pid != target)
 		return 1;
 	//arg0 will be the uid/gid
-	long arg0 = ptrace_tool.ptrace_get_syscall_arg(pid, 0);
+	long arg0 = ptrace_get_syscall_arg(pid, 0);
 	FILE *filter_file;
 	if((filter_file = fopen(PROCESS_FILTER_PATH,"r")) == NULL){
 		printf("Error: failed to open process filter file");

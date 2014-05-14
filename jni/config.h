@@ -6,6 +6,9 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#define SANDBOX_ARCH_ARM
+// #define SANDBOX_ARCH_X86
+
 #define SANDBOX_ENABLED 1
 
 #define PROCESS_FILTER_ENABLED 1
@@ -26,3 +29,4 @@
 #define SANDBOX_CONTENT_PROVIDER_FAKE_PREFIX "com"
 
 #endif /* CONFIG_H_ */
+

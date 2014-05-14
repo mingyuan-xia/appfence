@@ -10,8 +10,6 @@
 
 #define SANDBOX_FLAG 0x00000001
 
-typedef void *tracee_ptr_t;
-
  /**
   * Ptrace the app process until it forks a new process
   */
