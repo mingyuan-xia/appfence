@@ -86,8 +86,35 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
 				case __NR_stat:
 					syscall_common_handler(pid, "stat", flag);
 					break;
+				/* case __NR_newstat: */
+				/* 	syscall_common_handler(pid, "newstat", flag); */
+				/* 	break; */
 				case __NR_lstat:
 					syscall_common_handler(pid, "lstat", flag);
+					break;
+				/* case __NR_newlstat: */
+				/* 	syscall_common_handler(pid, "newlstat", flag); */
+				/* 	break; */
+				case __NR_readlink:
+					syscall_common_handler(pid, "readlink", flag);
+					break;
+				case __NR_statfs:
+					syscall_common_handler(pid, "statfs", flag);
+					break;
+				case __NR_truncate:
+					syscall_common_handler(pid, "truncate", flag);
+					break;
+				/* case __NR_utime: */
+				/* 	syscall_common_handler(pid, "utime", flag); */
+				/* 	break; */
+				case __NR_utimes:
+					syscall_common_handler(pid, "utimes", flag);
+					break;
+				case __NR_access:
+					syscall_common_handler(pid, "access", flag);
+					break;
+				case __NR_chdir:
+					syscall_common_handler(pid, "chdir", flag);
 					break;
 				case __NR_chroot:
 					syscall_common_handler(pid, "chroot", flag);
@@ -95,34 +122,33 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
 				case __NR_chmod:
 					syscall_common_handler(pid, "chmod", flag);
 					break;
-				case __NR_access:
-					syscall_common_handler(pid, "access", flag);
-					break;
 				case __NR_chown:
 					syscall_common_handler(pid, "chown", flag);
 					break;
 				case __NR_lchown:
 					syscall_common_handler(pid, "lchown", flag);
 					break;
-				case __NR_utimes:
-					syscall_common_handler(pid, "utimes", flag);
-					break;
-				case __NR_chdir:
-					syscall_common_handler(pid, "chdir", flag);
-					break;
-				case __NR_mkdir:
-					syscall_common_handler(pid, "mkdir", flag);
+				case __NR_open:
+					syscall_open_handler(pid, &binder_fd, flag);
 					break;
 				case __NR_creat:
 					syscall_common_handler(pid, "creat", flag);
 					break;
-				case __NR_open:
-					syscall_open_handler(pid, &binder_fd, flag);
+				case __NR_mknod:
+					syscall_common_handler(pid, "mknod", flag);
 					break;
+				case __NR_mkdir:
+					syscall_common_handler(pid, "mkdir", flag);
+					break;
+				case __NR_rmdir:
+					syscall_common_handler(pid, "rmdir", flag);
+					break;
+				//TODO: link syscall handler
 				case __NR_ioctl:
 					syscall_ioctl_handler(pid, binder_fd, flag);
 					break;
 				default:
+					printf("hello\n");
 					ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 					break;
 			}
@@ -143,6 +169,7 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
  */
 void syscall_common_handler(pid_t pid, char* syscall, int flag)
 {
+	printf("%s\n",syscall);
 	tracee_ptr_t arg0 = (tracee_ptr_t) ptrace_get_syscall_arg(pid, 0);
 
 	int len = ptrace_strlen(pid, arg0);
@@ -163,7 +190,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 			strcat(new_path, second_dir);
 			ptrace_write_data(pid, new_path, arg0, len + 1);
 			// create require folder
-			create_path(new_path);
+			/* create_path(new_path); */
 			printf("pid %d %s: %s\n ==> new path: %s\n", pid, syscall, path, new_path);
 
 			// return from open syscall, reset the path
@@ -204,7 +231,7 @@ void syscall_common_handler(pid_t pid, char* syscall, int flag)
 
 void syscall_open_handler(pid_t pid, int *binder_fd, int flag)
 {
-	tracee_ptr_t arg0 = ptrace_get_syscall_arg(pid, 0);
+	tracee_ptr_t arg0 = (tracee_ptr_t) ptrace_get_syscall_arg(pid, 0);
 	//arg1 is oflag
 	long arg1 = ptrace_get_syscall_arg(pid, 1);
 

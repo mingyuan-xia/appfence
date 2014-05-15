@@ -31,7 +31,7 @@ void binder_write_read_handler(pid_t pid)
 {
 	struct binder_write_read wr_buffer;
 	// arg2 is pointer to the buffer of ioctl
-	tracee_ptr_t arg2 = ptrace_get_syscall_arg(pid, 2);
+	tracee_ptr_t arg2 = (tracee_ptr_t) ptrace_get_syscall_arg(pid, 2);
 	
 	ptrace_read_data(pid, &wr_buffer, arg2, sizeof(wr_buffer));
 
@@ -41,7 +41,7 @@ void binder_write_read_handler(pid_t pid)
 		int i = 0;
 		uint32_t cmd;
 		tracee_ptr_t cur = (tracee_ptr_t) (wr_buffer.write_buffer + wr_buffer.write_consumed);
-		while(cur < (unsigned long) (wr_buffer.write_size + wr_buffer.write_buffer)) {
+		while((unsigned long) cur < (unsigned long) (wr_buffer.write_size + wr_buffer.write_buffer)) {
 			/* printf("%d:  ",i++); */
 			//read binde command from write buffer
 			ptrace_read_data(pid, &cmd, cur, sizeof(uint32_t));

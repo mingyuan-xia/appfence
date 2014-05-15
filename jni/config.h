@@ -11,7 +11,7 @@
 
 #define SANDBOX_ENABLED 1
 
-#define PROCESS_FILTER_ENABLED 1
+#define PROCESS_FILTER_ENABLED 0
 #define PROCESS_FILTER_PATH "/data/local/filter.cfg"
 
 #define FILE_SANDBOX_ENABLED 1
