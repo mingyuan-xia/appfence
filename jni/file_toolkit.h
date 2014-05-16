@@ -16,7 +16,7 @@ int check_prefix_dir(char* path, char* prefix_list);
 char* get_nth_dir(char* path, int n);
 
 // create folder base on dir
-void create_path(char* dir);
+int create_nth_dir(char* dir, int n, uid_t owner, gid_t group, mode_t mod);
 
 // create link of sandbox
 int create_link(char* sandbox_path, char* link_path);
