@@ -169,7 +169,6 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
  */
 void syscall_common_handler(pid_t pid, char* syscall, int flag)
 {
-	printf("%s\n",syscall);
 	tracee_ptr_t arg0 = (tracee_ptr_t) ptrace_get_syscall_arg(pid, 0);
 
 	int len = ptrace_strlen(pid, arg0);
@@ -325,13 +324,16 @@ void syscall_ioctl_handler(pid_t pid, int binder_fd, int flag)
 
 int syscall_setuid_gid_handler(pid_t pid, pid_t target, int is_gid)
 {
-	if(!PROCESS_FILTER_ENABLED || pid != target)
+	if(!PROCESS_FILTER_ENABLED || pid != target){
+		syscall_default_handler(pid);
 		return 1;
+	}
 	//arg0 will be the uid/gid
 	long arg0 = ptrace_get_syscall_arg(pid, 0);
 	FILE *filter_file;
 	if((filter_file = fopen(PROCESS_FILTER_PATH,"r")) == NULL){
 		printf("Error: failed to open process filter file");
+		syscall_default_handler(pid);
 		return 1;
 	}
 	long uid,gid;
