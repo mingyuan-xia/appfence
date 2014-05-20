@@ -171,6 +171,8 @@ pid_t ptrace_app_process(pid_t process_pid, int flag)
 					syscall_common_handler(pid, "uselib", flag, uid, gid);
 					break;
 				//TODO: link syscall handler
+				case __NR_unlink:
+					syscall_common_handler(pid, "unlink", flag, uid, gid);
 				case __NR_ioctl:
 					syscall_ioctl_handler(pid, binder_fd, flag);
 					break;
