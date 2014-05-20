@@ -10,58 +10,58 @@
 #include <stdio.h>
 #include "ptraceaux.h"
 
-#define WORD_SIZE 4
-
-void ptrace_read_data(pid_t pid, void *buf, void *addr, int nbytes)
+void ptrace_read_data(pid_t pid, void *buf, tracee_ptr_t addr, int nbytes)
 {
 	/* standard three-variable control */
 	int remaining = nbytes, copy, offset = 0;
-	char *dst = (char *)buf, *src = (char *)addr;
+	char *dst = (char *)buf;
+	tracee_ptr_t *src = addr;
 
 	while (remaining > 0) {
-		/* a word */
-		long v = ptrace(PTRACE_PEEKDATA, pid, src + offset, NULL);
-		copy = (remaining < WORD_SIZE ? remaining : WORD_SIZE);
+		/* a tracer word */
+		tracer_word_t v = ptrace(PTRACE_PEEKDATA, pid, src + offset, NULL);
+		copy = (remaining < TRACER_WORD_SIZE ? remaining : TRACER_WORD_SIZE);
 		memcpy(dst + offset, &v, copy);
-		offset += WORD_SIZE;
-		remaining -= WORD_SIZE;
+		offset += copy;
+		remaining -= copy;
 	}
 }
 
 int ptrace_strlen(pid_t pid, tracee_ptr_t addr)
 {
+	// TODO refactoring away platform stickness
 	int length = 0;
-	while(1) {
-		unsigned long v = ptrace(PTRACE_PEEKDATA, pid, addr + length, NULL);
-		unsigned long test = 0x000000ff;
-		for(; (test & v) != 0; test <<= 8){
+	while (1) {
+		tracer_word_t v = ptrace(PTRACE_PEEKDATA, pid, addr + length, NULL);
+		tracer_word_t test = 0x000000ff;
+		for (; (test & v) != 0; test <<= 8){
 			length++;
 		}
-		if(test != 0) break;
+		if (test != 0) break;
 	}
 	return length;
 }
 
-void ptrace_write_data(pid_t pid, void *buf, void *addr, int nbytes)
+void ptrace_write_data(pid_t pid, void *buf, tracee_ptr_t addr, int nbytes)
 {
 	int remaining = nbytes, copy, offset = 0;
-	char *dst = (char *)addr, *src = (char *)buf;
+	tracee_ptr_t dst = addr; 
+	char *src = (char *)buf;
 	while (remaining > 0) {
-		long v;
-		copy = (remaining < WORD_SIZE ? remaining : WORD_SIZE);
-		if(copy < WORD_SIZE){
-			/* avoid destroy the memory after dst */
+		tracer_word_t v;
+		copy = (remaining < TRACER_WORD_SIZE ? remaining : TRACER_WORD_SIZE);
+		if(copy < TRACER_WORD_SIZE){
+			/* save a few bytes beyond the scope 
+			   TODO this might be problamtic
+			   when these padding bytes go accorss the page boundary to an
+			   unmapped page 
+			*/
 			v = ptrace(PTRACE_PEEKDATA, pid, dst + offset, NULL);
-			memcpy(&v, (void *)(src + offset), copy);
-		} else {
-			memcpy(&v, (void *)(src + offset), copy);
 		}
-
-		//this may cause some problem
-		//it always write back a word
+		memcpy(&v, (void *)(src + offset), copy);
 		ptrace(PTRACE_POKEDATA, pid, (void *)(dst + offset), (void *)v);
-		offset += WORD_SIZE;
-		remaining -= WORD_SIZE;
+		offset += copy;
+		remaining -= copy;
 	}
 }
 

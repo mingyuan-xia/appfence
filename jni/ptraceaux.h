@@ -16,8 +16,14 @@
 /* #define IS_FORK_EVENT(status) (status>>16 == PTRACE_EVENT_FORK) */
 /* #define IS_CLONE_EVENT(status) (status>>16 == PTRACE_EVENT_CLONE) */
 
+/* TODO: imagine a 64-bit tracer tracing a 32-bit tracee */
 typedef void *tracee_ptr_t;
-typedef long tracee_word_t;
+/* Linux boxes follow LP64, i.e., long and pointers are 64-bit, int is 32-bit 
+ * Windows boxes follow LLP64, i.e. long long and pointers are 64-bit, int and long are 32-bit
+ * */
+typedef unsigned long tracer_word_t;
+
+#define TRACER_WORD_SIZE (sizeof(tracer_word_t))
 
 /**
  * Attach to a running process
