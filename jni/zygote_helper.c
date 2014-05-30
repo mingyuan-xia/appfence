@@ -8,38 +8,95 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
+#include <fnmatch.h>
 #include "zygote_helper.h"
 #include "ptraceaux.h"
 
 #define DEFAULT_ZYGOTE_PID 37
 
-pid_t zygote_find_process(void)
+static int is_the_zygote_process(pid_t pid)
 {
 	char filepath[128];
 	char buf[512], *p;
 	FILE *f;
-	pid_t pid = DEFAULT_ZYGOTE_PID;
-	snprintf(filepath, 128, "/proc/%d/status", pid);
+	snprintf(filepath, sizeof(filepath), "/proc/%d/status", pid);
 	f = fopen(filepath, "r");
 	if (!f) {
-		return -1;
+		return 0;
 	}
-	/* first line is enough */
-	fgets(buf, 512, f);
+
+	int term1 = 0, term2 = 0;
+	while (fgets(buf, sizeof(buf), f)) {
+		if (strncmp(buf, "Name:", 5) == 0) {
+			/* retrieve the name */
+			*(strchr(buf, '\n')) = '\0';
+			for (p = &buf[5]; *p != '\0'&& (*p == ' ' || *p == '\t'); ++p) ;
+			if (!strncmp(p, "zygote", 6)) {
+				term1 = 1;
+			}
+		}
+		else if (strncmp(buf, "PPid:", 5) == 0) {
+			/* retrieve ppid */
+			for (p = &buf[5]; *p != '\0' && (*p == ' ' || *p == '\t'); ++p) ;
+			if (atoi(p) == 1) {
+				term2 = 1;
+			}
+		}
+
+		if (term1 && term2) {
+			break;
+		}
+	}
 	fclose(f);
-	if (strncmp(buf, "Name:", 5)) {
-		return -1;
-	}
-	/* retrieve the name */
-	*(strchr(buf, '\n')) = '\0';
-	for (p = &buf[5]; *p != '\0'&& (*p == ' ' || *p == '\t'); ++p) ;
-	if (!strncmp(p, "zygote", 6)) {
-		return pid;
-	}
-	/* TODO: should be a loop for all processes in the /proc/ */
-	return pid;
+	return (term1 && term2);
 }
 
+pid_t zygote_find_process(void)
+{
+	char buf[1024];
+	char path_buf[256];
+	struct dirent *dp;
+	DIR *dir;
+	pid_t zygote_pid = DEFAULT_ZYGOTE_PID;
+
+	dir = opendir("/proc");
+	if (!dir)
+		return;
+
+	while ((dp = readdir(dir)) != NULL) {
+		pid_t pid;
+		int len;
+		if (dp->d_type != DT_DIR)
+			continue;
+
+		const char *d = dp->d_name;
+		while (*d != '\0' && isdigit(*d)) { d++; }
+		if (*d != '\0')
+			continue;
+
+		snprintf(path_buf, sizeof(path_buf), "/proc/%s/exe", dp->d_name);
+		len = readlink(path_buf, buf, sizeof(buf) - 1);
+		if (len <= 0) {
+			// printf("process info is null:%s\n", buf2);
+			continue;
+		}
+
+		buf[len] = 0;
+		if (fnmatch(buf, "/system/bin/app_process", FNM_PATHNAME) != 0) {
+			// printf("process info is mismatch:%s\n", buf);
+			continue;
+		}
+
+		pid = atoi(dp->d_name);
+		if (is_the_zygote_process(pid)) {
+			zygote_pid = pid;
+			break;
+		}
+	}
+	closedir(dir);
+	return zygote_pid;
+}
 
 pid_t ptrace_zygote(pid_t zygote_pid)
 {
