@@ -3,15 +3,17 @@
  * For unit test
  */
 
-#include "config.h"
-#include "zygote_helper.h"
-#include "ptraceaux.h"
-#include "sandbox_helper.h"
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "config.h"
+#include "zygote_helper.h"
+#include "ptraceaux.h"
+#include "sandbox_helper.h"
+#include "config_sync.h"
 
 #define APP_FLAG "app"
 #define ZYGOTE_FLAG "zygote"
@@ -23,10 +25,16 @@ int main(int argc, char *argv[])
 		printf("warnning: link existed\n");
 	}
 	/* printf("%d\n",argc); */
+
 	if(fork() == 0) {
-		pid_t pid = ptrace_zygote(zygote_find_process());
-		if(pid > 0) {
-			ptrace_app_process(pid, SANDBOX_ENABLED);
+		if (fork() == 0) {
+			pid_t pid = ptrace_zygote(zygote_find_process());
+			if(pid > 0) {
+				ptrace_app_process(pid, SANDBOX_ENABLED);
+			}
+		}
+		else {
+			config_sync();
 		}
 	} else {
 		printf("press [Ctrl - c] to stop sandboxing\n");
