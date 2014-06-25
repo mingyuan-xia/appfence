@@ -62,7 +62,7 @@ pid_t zygote_find_process(void)
 
 	dir = opendir("/proc");
 	if (!dir)
-		return;
+		return zygote_pid;
 
 	while ((dp = readdir(dir)) != NULL) {
 		pid_t pid;
