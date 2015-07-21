@@ -1,5 +1,8 @@
 Appfence
 ========
+
+# This project is obsoleted. We move on extending strace not ptrace for our desired functionalities.
+
 Appfence is an android *sandbox* that provides both traditional file/network isolation as well as Android-specific sandboxing. Appfence provides two major functionalities:
 * redirect files accessed by the sandboxed app. Thus the sandboxed app cannot access files belonging to the same app in normal mode.
 * Android API sandboxing, which is under investigation.
